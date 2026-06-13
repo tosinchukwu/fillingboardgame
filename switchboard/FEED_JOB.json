@@ -1,0 +1,16 @@
+{
+  "_comment": "Paste this Oracle Job into https://explorer.switchboardlabs.xyz/feed-builder → New Feed → Custom Job. Replace <PROJECT_REF> with your Supabase project ref (owixuzehqiwfrfzitjoe) and {MATCH_ID} stays literal — Crossbar substitutes it from the params you send.",
+  "tasks": [
+    {
+      "httpTask": {
+        "url": "https://owixuzehqiwfrfzitjoe.functions.supabase.co/verify-game-result?matchId={MATCH_ID}",
+        "method": "METHOD_GET"
+      }
+    },
+    {
+      "jsonParseTask": {
+        "path": "$.result"
+      }
+    }
+  ]
+}

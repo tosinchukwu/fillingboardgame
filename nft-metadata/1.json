@@ -1,0 +1,20 @@
+{
+  "name": "Filling Game Victory #1",
+  "description": "This NFT commemorates a glorious victory in the Filling Game Darts Tournament. The owner demonstrated superior strategy and aim.",
+  "image": "ipfs://bafybeifqcripnxrsezz2nry4lqarb46rgfrhukz5b3y2pi5ts5udjn7eha",
+  "attributes": [
+    {
+      "trait_type": "Edition",
+      "value": "First Blood"
+    },
+    {
+      "trait_type": "League",
+      "value": "Arc Testnet Alpha"
+    },
+    {
+      "display_type": "number",
+      "trait_type": "Match ID",
+      "value": 1
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# Supabase Project Configuration
+# Reference: https://supabase.com/docs/reference/cli/config
+
+[project]
+# Your Supabase project configuration
+# Get these values from: https://app.supabase.com/project/[project-id]/settings/general
+
+[api]
+# Port for local API server
+port = 54321
+
+[db]
+# Port for local PostgreSQL
+port = 54322
+# Shadow database for migrations
+shadow_port = 54323
+
+[studio]
+# Port for Supabase Studio UI
+port = 54323
+
+[functions.game-api]
+# Edge Function configuration for game-api
+# Learn more: https://supabase.com/docs/guides/functions/deployment
+verify_jwt = false  # Allow public access for game API (no authentication required)
