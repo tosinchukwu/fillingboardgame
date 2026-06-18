@@ -5,6 +5,10 @@ import { WALLET_CONNECT_PROJECT_ID, SUPPORTED_CHAINS } from '../lib/constants'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactNode, Component, ErrorInfo } from 'react'
 
+
+console.log("Project ID value:", WALLET_CONNECT_PROJECT_ID);
+console.log("Project ID type:", typeof WALLET_CONNECT_PROJECT_ID);
+
 // 1. Get projectId from https://cloud.walletconnect.com
 const projectId = WALLET_CONNECT_PROJECT_ID;
 
