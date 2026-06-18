@@ -226,7 +226,7 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
 
     try {
       // Check for API key
-      const apiKey = import.meta.env.CIRCLE_API_KEY;
+      const apiKey = import.meta.env.VITE_CIRCLE_API_KEY;
       if (!apiKey || apiKey === 'sandbox_key_placeholder') {
         throw new Error("Valid Circle API key not configured. Please check environment variables.");
       }
