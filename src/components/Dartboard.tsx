@@ -502,7 +502,7 @@ y={(aim ? aim.curY - 120 : handleY) - 135 + 15}
             {!dartFlying && (
              <text
                x={handleX}
-                y={handleY + 55}
+                y={handleY + 145}
                 textAnchor="middle"
                 fill="rgba(255,255,255,0.5)"
                 fontSize="18"
