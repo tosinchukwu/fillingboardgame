@@ -226,7 +226,7 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
 
     try {
       // Check for API key
-      const apiKey = import.meta.env.VITE_CIRCLE_API_KEY;
+      const apiKey = import.meta.env.CIRCLE_API_KEY;
       if (!apiKey || apiKey === 'sandbox_key_placeholder') {
         throw new Error("Valid Circle API key not configured. Please check environment variables.");
       }
@@ -262,22 +262,22 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
       });
 
       console.log('Circle App Kit bridge response:', response);
-      
+
       toast.success(
         `Successfully bridged ${numericAmount} USDC to Arc Testnet! Now you can use USDC as gas.`,
         { duration: 8000 }
       );
-      
+
       // Refetch balance after successful bridge
       await refetchUsdcBalance();
-      
+
       setTimeout(() => {
         onClose();
         setAmount('10');
         setShowConfirm(false);
         setTxHash(null);
       }, 2000);
-      
+
     } catch (err: any) {
       console.error('Bridge error:', err);
 
@@ -289,15 +289,15 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
         // Development fallback for testing
         toast.info("Sandbox Mode: Simulating successful bridge operation...");
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        
+
         const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
         setTxHash(mockTxHash);
-        
+
         toast.success(
           `[SIMULATED] Bridged ${numericAmount} USDC from ${sourceChain} to Arc Testnet!`,
           { duration: 8000 }
         );
-        
+
         setTimeout(() => {
           onClose();
           setAmount('10');
