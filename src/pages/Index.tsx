@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Palette, Settings, Volume2, Music as MusicIcon, Wallet, CheckCircle2, XCircle, Share2, Loader2, Twitter, Facebook, Instagram, Send, Eye, Activity, Trophy, Copy, Coins } from 'lucide-react';
+import { Palette, Settings, Volume2, Music as MusicIcon, Wallet, CheckCircle2, XCircle, Share2, Loader2, Twitter, Facebook, Instagram, Send, Eye, Activity, Trophy, Copy, Coins, LogOut } from 'lucide-react';
 import SettingsDialog, { CustomTrack } from '../components/SettingsDialog';
 import { BridgeDialog } from '../components/BridgeDialog';
 import BackgroundLayer, { BackgroundMode } from '../components/BackgroundLayer';
@@ -42,6 +42,71 @@ const AUDIO_ASSETS = {
     stand_up: '/audio/standup.mp3'
   }
 };
+
+// ===== WALLET BUTTON COMPONENT (moved to top right) =====
+const WalletButton = () => {
+  const { open } = useWeb3Modal();
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const formatAddress = (addr: string) => {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
+  if (!isConnected) {
+    return (
+      <Button
+        onClick={() => open()}
+        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 
+                 text-white font-medium px-4 py-2.5 rounded-xl transition-all duration-200 
+                 flex items-center gap-2 shadow-lg shadow-purple-500/20 h-10 text-xs"
+      >
+        <Wallet className="w-4 h-4" />
+        Connect Wallet
+      </Button>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <Button
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className="bg-[#1a1a2e] border border-gray-700 hover:border-gray-500 
+                 text-white font-medium px-4 py-2.5 rounded-xl transition-all 
+                 flex items-center gap-2 h-10 text-xs"
+      >
+        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+        <span className="font-mono">{formatAddress(address)}</span>
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </Button>
+
+      {isDropdownOpen && (
+        <div className="absolute right-0 mt-2 w-48 bg-[#1a1a2e] border border-gray-700 rounded-xl shadow-xl py-1 z-50">
+          <div className="px-4 py-2 border-b border-gray-700">
+            <p className="text-xs text-gray-400">Connected</p>
+            <p className="text-sm text-white font-mono">{formatAddress(address)}</p>
+          </div>
+          <button
+            onClick={() => {
+              disconnect();
+              setIsDropdownOpen(false);
+              toast.success("Wallet disconnected");
+            }}
+            className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 
+                     transition-colors flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Disconnect
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+// ===== END WALLET BUTTON =====
 
 const RulesScroll = () => (
   <div className="mt-2 text-left glass-panel p-6 rounded-2xl border-white/10 bg-black/40 space-y-5 max-h-72 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-4 duration-500">
@@ -1077,9 +1142,7 @@ const Index = () => {
             placeholder="What should we call you?"
             className="bg-white/5 border-white/10 text-white placeholder:text-white/10 h-12 rounded-xl focus:border-primary/50"
           />
-          <Button onClick={() => isConnected ? setP1Address(address!) : open()} variant="outline" className="w-full h-10 border-white/10 text-white/60 text-xs mt-2 rounded-xl hover:bg-white/5">
-            {p1Address ? `Wallet: ${p1Address.slice(0, 6)}...` : 'Link Your Wallet'}
-          </Button>
+          {/* ✅ REMOVED the "Link Your Wallet" button from here */}
         </div>
       );
     }
@@ -1223,9 +1286,7 @@ const Index = () => {
               placeholder="Enter your name"
               className="bg-white/5 border-white/10 text-white placeholder:text-white/10 h-10 rounded-xl focus:border-primary/50 text-sm mb-2"
             />
-            <Button onClick={() => isConnected ? setP1Address(address!) : open()} variant="outline" className="w-full h-10 border-white/10 text-white/60 text-xs mb-4 rounded-xl hover:bg-white/5">
-              {address ? `Wallet: ${address.slice(0, 6)}...` : 'Link Your Wallet First'}
-            </Button>
+            {/* ✅ REMOVED the "Link Your Wallet" button from here */}
           </div>
 
           {!isLobbyJoined ? (
@@ -1352,14 +1413,16 @@ const Index = () => {
               {supabaseConnected ? 'Sync Active' : 'Connecting Sync...'}
             </div>
           )}
+          {/* ✅ WALLET BUTTON - MOVED HERE (top right) */}
+          <WalletButton />
           {/* Network Switcher */}
           <NetworkSwitcher />
-          <Button variant="ghost" onClick={() => setIsBridgeOpen(true)} className="h-12 px-4 rounded-xl glass-panel border-white/10 text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" title="Bridge Funds to Arc">
+          <Button variant="ghost" onClick={() => setIsBridgeOpen(true)} className="h-10 px-4 rounded-xl glass-panel border-white/10 text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" title="Bridge Funds to Arc">
             <Coins className="w-4 h-4 text-primary" />
             <span>Bridge</span>
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="w-12 h-12 rounded-xl glass-panel border-white/10 text-white">
-            <Settings className="w-6 h-6" />
+          <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="w-10 h-10 rounded-xl glass-panel border-white/10 text-white">
+            <Settings className="w-5 h-5" />
           </Button>
         </div>
         <div className="flex items-center justify-center min-h-screen p-4">
@@ -1443,6 +1506,8 @@ const Index = () => {
         </a>
       </div>
       <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+        {/* ✅ WALLET BUTTON - MOVED HERE (top right) */}
+        <WalletButton />
         <NetworkSwitcher />
         <Button variant="ghost" onClick={() => setIsBridgeOpen(true)} className="h-10 px-3 rounded-xl glass-panel border-white/10 text-white flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest" title="Bridge Funds to Arc">
           <Coins className="w-3.5 h-3.5 text-primary" />
