@@ -177,7 +177,7 @@ export function isSwitchboardConfigured(chainId: number): boolean {
   );
 }
 
-export const WALLET_CONNECT_PROJECT_ID = 'df9103b089fad4ac16226c9ea96a15aa';
+export const WALLET_CONNECT_PROJECT_ID = import.meta.env.VITE_WALLECTCONNECT_PROJECT_ID;
 
 // ─── Address getter functions ────────────────────────────────────────────────
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as `0x${string}`;
