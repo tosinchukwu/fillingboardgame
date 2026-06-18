@@ -114,7 +114,7 @@ const MAX_BRIDGE_AMOUNT = 10000; // 10,000 USDC maximum
 
 export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) => {
   const { isConnected, address, chainId: walletChainId } = useAccount();
-  const [amount, setAmount] = useState('10');
+  const [amount, setAmount] = useState('1');
   const [sourceChain, setSourceChain] = useState('Base Sepolia');
   const [isBridging, setIsBridging] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
