@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { GlobalHeader } from '../components/GlobalHeader';
 import Dartboard from '../components/Dartboard';
 import GameLog from '../components/GameLog';
 import MasterScoringTable from '../components/MasterScoringTable';
@@ -107,6 +108,22 @@ const WalletButton = () => {
   );
 };
 // ===== END WALLET BUTTON =====
+
+// ===== BRIDGE BUTTON COMPONENT (reusable for both screens) =====
+const BridgeButton = ({ onClick }: { onClick: () => void }) => {
+  return (
+    <Button
+      variant="ghost"
+      onClick={onClick}
+      className="h-10 px-4 rounded-xl glass-panel border-white/10 text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+      title="Bridge Funds to Arc"
+    >
+      <Coins className="w-4 h-4 text-primary" />
+      <span>Bridge</span>
+    </Button>
+  );
+};
+// ===== END BRIDGE BUTTON =====
 
 const RulesScroll = () => (
   <div className="mt-2 text-left glass-panel p-6 rounded-2xl border-white/10 bg-black/40 space-y-5 max-h-72 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-4 duration-500">
@@ -1392,468 +1409,114 @@ const Index = () => {
 
   if (!gameStarted || !gameState) {
     return (
-      <div className={`h-screen overflow-hidden theme-${theme} p-3 md:p-6 flex flex-col items-center transition-colors duration-700 font-sans`}>
-        <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
-        <div className="fixed top-6 left-6 z-50">
-          <a
-            href="https://fillinggame.vercel.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 py-2 px-5 rounded-xl transition-all shadow-[0_0_15px_rgba(232,65,66,0.1)]"
-          >
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] hidden sm:inline">Register Match</span>
-            <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] sm:hidden">Register Match</span>
-          </a>
-        </div>
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-          {(setupMode === 'multi' || setupMode === 'invite') && (setupMode === 'invite' ? inviteCode : matchId) && (
-            <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl glass-panel border ${supabaseConnected ? 'border-emerald-500/30 text-emerald-400' : 'border-orange-500/30 text-orange-400'} text-[10px] font-black tracking-widest uppercase`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${supabaseConnected ? 'bg-emerald-500 animate-pulse' : 'bg-orange-500'}`} />
-              {supabaseConnected ? 'Sync Active' : 'Connecting Sync...'}
-            </div>
-          )}
-          {/* ✅ WALLET BUTTON - MOVED HERE (top right) */}
-          <WalletButton />
-          {/* Network Switcher */}
-          <NetworkSwitcher />
-          <Button variant="ghost" onClick={() => setIsBridgeOpen(true)} className="h-10 px-4 rounded-xl glass-panel border-white/10 text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" title="Bridge Funds to Arc">
-            <Coins className="w-4 h-4 text-primary" />
-            <span>Bridge</span>
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="w-10 h-10 rounded-xl glass-panel border-white/10 text-white">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="w-full max-w-md space-y-8 text-center glass-panel p-10 rounded-[2rem] neon-border-theme">
-            <h1 className="text-6xl text-white tracking-[0.2em] mb-2">FILLING GAME</h1>
-            <p className="text-primary text-sm font-mono-game uppercase tracking-[0.3em] opacity-80">Strategic Dart Simulation</p>
-            <div className="space-y-6 pt-4">
-              {/* Tab Switcher */}
-              <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
-                <button
-                  onClick={() => setSetupMode('solo')}
-                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'solo' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-                >
-                  Solo Mission
-                </button>
-                <button
-                  onClick={() => setSetupMode('multi')}
-                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'multi' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-                >
-                  Private Match
-                </button>
-                <button
-                  onClick={() => setSetupMode('invite')}
-                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'invite' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-                >
-                  Invite Link
-                </button>
-                <button
-                  onClick={() => setSetupMode('history')}
-                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'history' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-                >
-                  History
-                </button>
-              </div>
+      <>
+        {/* ✅ Global Header - Always Visible, Always Accessible */}
+        <GlobalHeader
+          theme={theme}
+          onThemeChange={setTheme}
+          volume={volume}
+          onVolumeChange={setVolume}
+          musicEnabled={musicEnabled}
+          onMusicToggle={setMusicEnabled}
+          sfxEnabled={sfxEnabled}
+          onSfxToggle={setSfxEnabled}
+          selectedMusic={selectedMusic}
+          onMusicChange={setSelectedMusic}
+          customTracks={customTracks}
+          onCustomTrackAdd={handleCustomTrackAdd}
+          onCustomTrackDelete={handleCustomTrackDelete}
+          background={background}
+          onBackgroundChange={setBackground}
+          customWallpaperUrl={customWallpaperUrl}
+          onCustomWallpaperChange={setCustomWallpaperUrl}
+        />
 
-              {setupMode === 'history' ? (
-                <div className="h-[350px]">
-                  <VerifiedScoreboard />
+        <div className={`h-screen overflow-hidden theme-${theme} p-3 md:p-6 flex flex-col items-center transition-colors duration-700 font-sans`}>
+          <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
+          <div className="fixed top-6 left-6 z-50">
+            <a
+              href="https://fillinggame.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 py-2 px-5 rounded-xl transition-all shadow-[0_0_15px_rgba(232,65,66,0.1)]"
+            >
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] hidden sm:inline">Register Match</span>
+              <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] sm:hidden">Register Match</span>
+            </a>
+          </div>
+
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div className="w-full max-w-md space-y-8 text-center glass-panel p-10 rounded-[2rem] neon-border-theme">
+              <h1 className="text-6xl text-white tracking-[0.2em] mb-2">FILLING GAME</h1>
+              <p className="text-primary text-sm font-mono-game uppercase tracking-[0.3em] opacity-80">Strategic Dart Simulation</p>
+              <div className="space-y-6 pt-4">
+                {/* Tab Switcher */}
+                <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
+                  <button
+                    onClick={() => setSetupMode('solo')}
+                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'solo' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
+                  >
+                    Solo Mission
+                  </button>
+                  <button
+                    onClick={() => setSetupMode('multi')}
+                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'multi' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
+                  >
+                    Private Match
+                  </button>
+                  <button
+                    onClick={() => setSetupMode('invite')}
+                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'invite' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
+                  >
+                    Invite Link
+                  </button>
+                  <button
+                    onClick={() => setSetupMode('history')}
+                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'history' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
+                  >
+                    History
+                  </button>
                 </div>
-              ) : renderSetupContent()}
 
-              {setupMode === 'solo' && (
-                <Button onClick={startSoloGame} className="w-full h-14 bg-primary text-white font-black text-xl rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all">
-                  🚀 Start Solo Mission
-                </Button>
-              )}
+                {setupMode === 'history' ? (
+                  <div className="h-[350px]">
+                    <VerifiedScoreboard />
+                  </div>
+                ) : renderSetupContent()}
 
-              <div className="flex justify-center gap-3">
-                <Button onClick={shareGame} variant="ghost" className="bg-white/5 border border-white/10 text-white/80 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10">
-                  <Share2 className="w-3 h-3 text-primary" />
-                  Invite Friend
-                </Button>
-                <button
-                  onClick={() => navigate('/watch')}
-                  className="bg-white/5 border border-white/10 text-white/60 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10 transition-all"
-                >
-                  📺 Watch Live Matches
-                </button>
+                {setupMode === 'solo' && (
+                  <Button onClick={startSoloGame} className="w-full h-14 bg-primary text-white font-black text-xl rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    🚀 Start Solo Mission
+                  </Button>
+                )}
+
+                <div className="flex justify-center gap-3">
+                  <Button onClick={shareGame} variant="ghost" className="bg-white/5 border border-white/10 text-white/80 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10">
+                    <Share2 className="w-3 h-3 text-primary" />
+                    Invite Friend
+                  </Button>
+                  <button
+                    onClick={() => navigate('/watch')}
+                    className="bg-white/5 border border-white/10 text-white/60 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10 transition-all"
+                  >
+                    📺 Watch Live Matches
+                  </button>
+                </div>
+                <Button onClick={() => setShowRules(!showRules)} variant="ghost" className="w-full text-white/40 text-[10px] uppercase tracking-widest h-8 mt-2">📜 Game Rules & Strategy</Button>
+                {showRules && <RulesScroll />}
               </div>
-              <Button onClick={() => setShowRules(!showRules)} variant="ghost" className="w-full text-white/40 text-[10px] uppercase tracking-widest h-8 mt-2">📜 Game Rules & Strategy</Button>
-              {showRules && <RulesScroll />}
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className={`min-h-screen theme-${theme} p-3 md:p-6 flex flex-col items-center transition-colors duration-700 font-sans`}>
-      <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
-      <div className="fixed top-3 left-3 z-50">
-        <a
-          href="https://fillinggame.vercel.app/join-match"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 py-2 px-5 rounded-xl transition-all shadow-[0_0_15px_rgba(232,65,66,0.1)]"
-        >
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px]">Register Match</span>
-        </a>
-      </div>
-      <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
-        {/* ✅ WALLET BUTTON - MOVED HERE (top right) */}
-        <WalletButton />
-        <NetworkSwitcher />
-        <Button variant="ghost" onClick={() => setIsBridgeOpen(true)} className="h-10 px-3 rounded-xl glass-panel border-white/10 text-white flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest" title="Bridge Funds to Arc">
-          <Coins className="w-3.5 h-3.5 text-primary" />
-          <span>Bridge</span>
-        </Button>
-        <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="w-10 h-10 rounded-xl glass-panel border-white/10 text-white">
-          <Settings className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {gameState.gameOver && gameState.winner !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto py-8">
-          <div className="glass-panel p-8 md:p-12 rounded-[2rem] border-primary text-center neon-border-theme max-h-[90vh] overflow-y-auto custom-scrollbar max-w-lg w-full mx-4">
-            <h2 className="text-4xl md:text-5xl text-primary font-black italic mb-2 uppercase">{gameState.players[gameState.winner].name} WINS!</h2>
-            <p className="text-white/60 text-xs font-mono-game uppercase tracking-widest mb-4">Final Score: {gameState.players[gameState.winner].totalScore} pts</p>
-
-            <NFTVictoryCard
-              winnerName={gameState.players[gameState.winner].name}
-              score={gameState.players[gameState.winner].totalScore}
-              matchId={matchId}
-              isMinting={isWaitingForTx}
-              isMinted={isTxSuccess}
-              txHash={hash}
-              chainName={chain?.name || (IS_MAINNET ? 'Mainnet' : 'Testnet')}
-              explorerUrl={chain?.blockExplorers?.default?.url && hash ? `${chain.blockExplorers.default.url}/tx/${hash}` : undefined}
-              theme={theme}
-            />
-
-            {gameState.batch1Scores && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 animate-in slide-in-from-top-4 duration-700 delay-300">
-                <div className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-3">Batch 1 Intelligence Report</div>
-                <div className="flex items-center justify-center gap-12">
-                  <div className="text-left">
-                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">{gameState.players[0].name}</div>
-                    <div className={`text-2xl font-black italic ${gameState.batch1Scores[0] > gameState.batch1Scores[1] ? 'text-primary' : 'text-white/60'}`}>
-                      {gameState.batch1Scores[0]} pts
-                    </div>
-                  </div>
-                  <div className="text-primary font-black italic">VS</div>
-                  <div className="text-right">
-                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">{gameState.players[1].name}</div>
-                    <div className={`text-2xl font-black italic ${gameState.batch1Scores[1] > gameState.batch1Scores[0] ? 'text-primary' : 'text-white/60'}`}>
-                      {gameState.batch1Scores[1]} pts
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 pt-3 border-t border-white/5 text-[10px] text-white/40 font-mono-game uppercase tracking-widest italic">
-                  {gameState.batch1Scores[0] > gameState.batch1Scores[1]
-                    ? `${gameState.players[0].name} dominated the first engagement`
-                    : gameState.batch1Scores[1] > gameState.batch1Scores[0]
-                      ? `${gameState.players[1].name} led the initial charge`
-                      : "An equal exchange of firepower in Batch 1"
-                  }
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-3 mb-6">
-              <Button
-                onClick={resetGame}
-                className="w-full h-14 bg-primary text-white font-black uppercase tracking-widest text-lg rounded-2xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
-                🎮 Play Again
-              </Button>
-
-              <Button
-                onClick={async () => {
-                  if (!address) {
-                    toast.error("Please connect your wallet first!");
-                    return;
-                  }
-                  if (!switchboardReady) {
-                    toast.error("Switchboard verifier not configured for this network yet.");
-                    return;
-                  }
-
-                  setIsVerifying(true);
-
-                  try {
-                    const winnerName =
-                      gameState?.players[gameState.winner!]?.name || "Anonymous";
-
-                    // 1. Ask the Switchboard quorum to replay the game and sign the result.
-                    const bundle = await fetchVerifiedUpdate(activeChainId, {
-                      hitHistory,
-                      winnerName,
-                      winnerAddress: address,
-                      matchId: activeSyncId ?? '',
-                    });
-
-                    // 2. Submit the signed updates on-chain. Contract verifies the
-                    //    signatures via the Switchboard router and records the score.
-                    writeContract({
-                      address: activeVerifierAddress as `0x${string}`,
-                      abi: VERIFIER_CONTRACT_ABI,
-                      functionName: 'submitVerifiedResult',
-                      args: [bundle.encodedUpdates, winnerName],
-                      account: address as `0x${string}`,
-                      chain: chain,
-                      // Pay the per-update Switchboard fee (refund of surplus is automatic).
-                      value: parseEther('0.0005'),
-                    });
-
-                    toast.success("Verification submitted via Switchboard!");
-                  } catch (error) {
-                    console.error("Verification failed:", error);
-                    toast.error(
-                      error instanceof Error ? error.message : "Failed to initiate verification.",
-                    );
-                  } finally {
-                    setIsVerifying(false);
-                  }
-                }}
-                disabled={isVerifying || !hitHistory.length}
-                variant="outline"
-                className="w-full h-12 border-primary/30 text-primary font-black uppercase tracking-widest text-xs rounded-xl hover:bg-primary/5 transition-all"
-              >
-                {isVerifying ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Verifying via Switchboard...</>
-                ) : (
-                  '🛡️ Verify Score on Chain (Switchboard)'
-                )}
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Tactical Progress</div>
-                <div className="text-xl font-black italic text-primary">{gameState.closedNumbers.size} / 15</div>
-                <div className="text-[7px] text-white/20 uppercase tracking-tighter">Numbers Closed</div>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Match Success Rate</div>
-                <div className="text-xl font-black italic text-primary">
-                  {Math.round((gameState.players[gameState.winner!].totalScore / (15 * 12 + 10)) * 100)}%
-                </div>
-                <div className="text-[7px] text-white/20 uppercase tracking-tighter">Combat Efficiency</div>
-              </div>
-            </div>
-
-            <div className="space-y-6 mb-10">
-              <div className="flex flex-col items-center gap-2">
-                <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Broadcast Victory To Command</div>
-                <div className="text-[9px] text-primary/60 italic">📸 Tip: Take a screenshot to share with your tactical report!</div>
-                <div className="text-[10px] text-white/40 font-mono-game mt-2 font-bold tracking-widest opacity-50 underline decoration-primary/30">https://fillingdartgame.vercel.app</div>
-              </div>
-              <div className="flex justify-center gap-4">
-                <Button
-                  onClick={() => {
-                    const siteUrl = "https://fillingdartgame.vercel.app";
-                    const text = `🎯 Tactical Victory on Filling Game! \n🏆 Score: ${gameState.players[gameState.winner!].totalScore} pts\n📊 Batch 1: ${gameState.batch1Scores![0]} - ${gameState.batch1Scores![1]}\n🚀 Play now: ${siteUrl}`;
-                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
-                  }}
-                  variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-primary p-0 shadow-lg"
-                >
-                  <Twitter className="w-5 h-5" />
-                </Button>
-                <Button
-                  onClick={() => {
-                    const siteUrl = "https://fillingdartgame.vercel.app";
-                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`, '_blank');
-                  }}
-                  variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-blue-500 p-0 shadow-lg"
-                >
-                  <Facebook className="w-5 h-5" />
-                </Button>
-                <Button
-                  onClick={() => {
-                    const siteUrl = "https://fillingdartgame.vercel.app";
-                    const text = `🎯 Tactical Victory! Score: ${gameState.players[gameState.winner!].totalScore} pts. \nBatch 1 Breakdown: ${gameState.batch1Scores![0]} vs ${gameState.batch1Scores![1]}. \nJoin the fight at ${siteUrl}`;
-                    window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`, '_blank');
-                  }}
-                  variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-purple-500 p-0 shadow-lg"
-                >
-                  <Send className="w-5 h-5" /> {/* Using Send for Farcaster/Warpcast feel */}
-                </Button>
-                <Button
-                  onClick={() => {
-                    const siteUrl = "https://fillingdartgame.vercel.app";
-                    const summary = `🏆 I won! ${gameState.players[gameState.winner!].totalScore} pts on Filling Game. (B1: ${gameState.batch1Scores![0]}-${gameState.batch1Scores![1]}). \nPlay: ${siteUrl}`;
-                    navigator.clipboard.writeText(summary);
-                    toast.success("Score details copied! Share your screenshot on Instagram.");
-                  }}
-                  variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-pink-500 p-0 shadow-lg"
-                >
-                  <Instagram className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
-
-            <div className={`mt-4 p-3 rounded-xl text-[10px] text-center ${verificationComplete ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-orange-500/10 border border-orange-500/30 text-orange-400'}`}>
-              {verificationComplete ? (
-                '✅ Verification Complete - Check Verified History Tab'
-              ) : (
-                '⏳ Switchboard quorum signing your score...'
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
-              <Button onClick={resetGame} className="bg-white/10 text-white font-black px-8 py-6 text-lg rounded-xl flex-1 hover:bg-white/20">Play Again</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Top header bar: title + live status, centered above the 3-column layout */}
-      <div className="w-full max-w-[1700px] mb-4 px-2 flex flex-col items-center gap-3">
-        <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
-        <div className="flex flex-wrap items-center justify-center gap-2 glass-panel py-2 px-4 rounded-full border-white/10">
-          <span className="font-mono-game text-[10px] tracking-[0.2em] text-primary animate-pulse uppercase">{gameState.players[gameState.currentPlayer].name}'S TURN</span>
-          <div className="h-4 w-[1px] bg-white/10" />
-          <span className="text-white/60 text-[10px] font-mono-game tracking-[0.2em] uppercase">{gameState.dartsRemaining} DARTS REMAINING</span>
-          <Button variant="ghost" size="sm" onClick={resetGame} className="text-[9px] uppercase tracking-widest text-white/40 hover:text-primary h-6 ml-2">New Game</Button>
-        </div>
-      </div>
-
-      <div className="w-full max-w-[1700px] flex flex-col xl:flex-row gap-6 items-stretch justify-center min-h-0 pb-10">
-        {/* Left: Log */}
-        <div className="xl:w-[320px] w-full flex-shrink-0 flex flex-col h-full order-3 xl:order-1 xl:pt-0">
-          <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl">
-            <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
-              <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Activity Log</h3>
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            </div>
-            <div className="flex-1 overflow-hidden h-full">
-              <GameLog messages={gameState.logMessages} p1Name={gameState.players[0].name} p2Name={gameState.players[1].name} />
-            </div>
-          </div>
-
-          {/* Target Score Display */}
-          <div className="mt-4 glass-panel rounded-3xl p-5 border-white/10 shadow-2xl animate-in slide-in-from-left-4 duration-500">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
-              <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
-                Batch {gameState.batch}
-              </div>
-            </div>
-            {gameState.batch === 2 && gameState.batch1Scores && (
-              <div className="grid grid-cols-2 gap-4 mt-1 mb-4">
-                <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                  <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
-                  <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                  <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
-                  <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
-                </div>
-              </div>
-            )}
-            {gameState.batch === 1 && (
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-white tracking-tighter italic">221.5</span>
-                <span className="text-[10px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
-              </div>
-            )}
-            {gameState.batch === 2 && gameState.batch1Scores && (
-              <div className="mt-1 space-y-1.5 border-t border-white/5 pt-3">
-                <div className="text-[9px] font-medium leading-tight text-primary/80">
-                  <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win Batch 2
-                </div>
-                <div className="text-[9px] font-medium leading-tight text-secondary/80">
-                  <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win Batch 2
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Center: Board */}
-        <div className="flex-1 flex flex-col items-center justify-between min-w-0 order-1 xl:order-2 py-4">
-          <div className="flex-1 flex items-center justify-center min-h-0">
-            <Dartboard gameState={gameState} onHitNumber={handleHitNumber} onHitRing={handleHitRing} disabled={gameState.gameOver} turnSeconds={turnSeconds} />
-          </div>
-          <div className="flex flex-col items-center gap-4 w-full max-w-md mt-4">
-
-            {!gameState.isVsCPU && (
-              <div className="flex flex-wrap justify-center gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={shareSyncLink}
-                  className="glass-panel border-primary/20 hover:bg-primary/10 text-primary-light text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
-                >
-                  <Share2 className="w-3 h-3 mr-2" />
-                  Sync Link
-                </Button>
-                {makePublic && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      const activeMatchId = setupMode === 'invite' ? inviteCode : String(parsedMatchId || '');
-                      const specLink = `${window.location.origin}/watch?match=${activeMatchId}`;
-                      await navigator.clipboard.writeText(specLink);
-                      toast.success("Spectator Link Copied!", { description: "Anyone can watch this live match." });
-                    }}
-                    className="glass-panel border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
-                  >
-                    <Eye className="w-3 h-3 mr-2" />
-                    Spectator Link
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Table — tabs pinned to bottom of column */}
-        <div className="xl:w-[620px] w-full flex-shrink-0 order-2 flex flex-col shadow-2xl">
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {rightColTab === 'stats' ? (
-              <MasterScoringTable gameState={gameState} />
-            ) : (
-              <VerifiedScoreboard />
-            )}
-          </div>
-          {/* Tab Switcher pinned to the bottom of the scoreboard column */}
-          <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mt-3">
-            <button
-              onClick={() => setRightColTab('stats')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'stats' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-primary hover:text-primary hover:bg-primary/10'}`}
-            >
-              <Activity className="w-3 h-3" />
-              Live Match Stats
-            </button>
-            <button
-              onClick={() => setRightColTab('history')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'history' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/10'}`}
-            >
-              <Trophy className="w-3 h-3" />
-              Verified History
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <BatchTransitionOverlay
-        show={showBatchOverlay}
-        scores={gameState.batch1Scores}
-        players={gameState.players}
-        onClose={() => setShowBatchOverlay(false)}
-      />
-
-      <SettingsDialog
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+    <>
+      {/* ✅ Global Header - Always Visible, Always Accessible */}
+      <GlobalHeader
         theme={theme}
         onThemeChange={setTheme}
         volume={volume}
@@ -1873,12 +1536,355 @@ const Index = () => {
         onCustomWallpaperChange={setCustomWallpaperUrl}
       />
 
-      <BridgeDialog
-        isOpen={isBridgeOpen}
-        onClose={() => setIsBridgeOpen(false)}
-      />
+      <div className={`min-h-screen theme-${theme} p-3 md:p-6 flex flex-col items-center transition-colors duration-700 font-sans`}>
+        <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
+        <div className="fixed top-3 left-3 z-50">
+          <a
+            href="https://fillinggame.vercel.app/join-match"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 py-2 px-5 rounded-xl transition-all shadow-[0_0_15px_rgba(232,65,66,0.1)]"
+          >
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px]">Register Match</span>
+          </a>
+        </div>
 
-    </div>
+        {gameState.gameOver && gameState.winner !== null && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto py-8">
+            <div className="glass-panel p-8 md:p-12 rounded-[2rem] border-primary text-center neon-border-theme max-h-[90vh] overflow-y-auto custom-scrollbar max-w-lg w-full mx-4">
+              <h2 className="text-4xl md:text-5xl text-primary font-black italic mb-2 uppercase">{gameState.players[gameState.winner].name} WINS!</h2>
+              <p className="text-white/60 text-xs font-mono-game uppercase tracking-widest mb-4">Final Score: {gameState.players[gameState.winner].totalScore} pts</p>
+
+              <NFTVictoryCard
+                winnerName={gameState.players[gameState.winner].name}
+                score={gameState.players[gameState.winner].totalScore}
+                matchId={matchId}
+                isMinting={isWaitingForTx}
+                isMinted={isTxSuccess}
+                txHash={hash}
+                chainName={chain?.name || (IS_MAINNET ? 'Mainnet' : 'Testnet')}
+                explorerUrl={chain?.blockExplorers?.default?.url && hash ? `${chain.blockExplorers.default.url}/tx/${hash}` : undefined}
+                theme={theme}
+              />
+
+              {gameState.batch1Scores && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 animate-in slide-in-from-top-4 duration-700 delay-300">
+                  <div className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-3">Batch 1 Intelligence Report</div>
+                  <div className="flex items-center justify-center gap-12">
+                    <div className="text-left">
+                      <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">{gameState.players[0].name}</div>
+                      <div className={`text-2xl font-black italic ${gameState.batch1Scores[0] > gameState.batch1Scores[1] ? 'text-primary' : 'text-white/60'}`}>
+                        {gameState.batch1Scores[0]} pts
+                      </div>
+                    </div>
+                    <div className="text-primary font-black italic">VS</div>
+                    <div className="text-right">
+                      <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">{gameState.players[1].name}</div>
+                      <div className={`text-2xl font-black italic ${gameState.batch1Scores[1] > gameState.batch1Scores[0] ? 'text-primary' : 'text-white/60'}`}>
+                        {gameState.batch1Scores[1]} pts
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-white/5 text-[10px] text-white/40 font-mono-game uppercase tracking-widest italic">
+                    {gameState.batch1Scores[0] > gameState.batch1Scores[1]
+                      ? `${gameState.players[0].name} dominated the first engagement`
+                      : gameState.batch1Scores[1] > gameState.batch1Scores[0]
+                        ? `${gameState.players[1].name} led the initial charge`
+                        : "An equal exchange of firepower in Batch 1"
+                    }
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3 mb-6">
+                <Button
+                  onClick={resetGame}
+                  className="w-full h-14 bg-primary text-white font-black uppercase tracking-widest text-lg rounded-2xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  🎮 Play Again
+                </Button>
+
+                <Button
+                  onClick={async () => {
+                    if (!address) {
+                      toast.error("Please connect your wallet first!");
+                      return;
+                    }
+                    if (!switchboardReady) {
+                      toast.error("Switchboard verifier not configured for this network yet.");
+                      return;
+                    }
+
+                    setIsVerifying(true);
+
+                    try {
+                      const winnerName =
+                        gameState?.players[gameState.winner!]?.name || "Anonymous";
+
+                      // 1. Ask the Switchboard quorum to replay the game and sign the result.
+                      const bundle = await fetchVerifiedUpdate(activeChainId, {
+                        hitHistory,
+                        winnerName,
+                        winnerAddress: address,
+                        matchId: activeSyncId ?? '',
+                      });
+
+                      // 2. Submit the signed updates on-chain. Contract verifies the
+                      //    signatures via the Switchboard router and records the score.
+                      writeContract({
+                        address: activeVerifierAddress as `0x${string}`,
+                        abi: VERIFIER_CONTRACT_ABI,
+                        functionName: 'submitVerifiedResult',
+                        args: [bundle.encodedUpdates, winnerName],
+                        account: address as `0x${string}`,
+                        chain: chain,
+                        // Pay the per-update Switchboard fee (refund of surplus is automatic).
+                        value: parseEther('0.0005'),
+                      });
+
+                      toast.success("Verification submitted via Switchboard!");
+                    } catch (error) {
+                      console.error("Verification failed:", error);
+                      toast.error(
+                        error instanceof Error ? error.message : "Failed to initiate verification.",
+                      );
+                    } finally {
+                      setIsVerifying(false);
+                    }
+                  }}
+                  disabled={isVerifying || !hitHistory.length}
+                  variant="outline"
+                  className="w-full h-12 border-primary/30 text-primary font-black uppercase tracking-widest text-xs rounded-xl hover:bg-primary/5 transition-all"
+                >
+                  {isVerifying ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Verifying via Switchboard...</>
+                  ) : (
+                    '🛡️ Verify Score on Chain (Switchboard)'
+                  )}
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Tactical Progress</div>
+                  <div className="text-xl font-black italic text-primary">{gameState.closedNumbers.size} / 15</div>
+                  <div className="text-[7px] text-white/20 uppercase tracking-tighter">Numbers Closed</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Match Success Rate</div>
+                  <div className="text-xl font-black italic text-primary">
+                    {Math.round((gameState.players[gameState.winner!].totalScore / (15 * 12 + 10)) * 100)}%
+                  </div>
+                  <div className="text-[7px] text-white/20 uppercase tracking-tighter">Combat Efficiency</div>
+                </div>
+              </div>
+
+              <div className="space-y-6 mb-10">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Broadcast Victory To Command</div>
+                  <div className="text-[9px] text-primary/60 italic">📸 Tip: Take a screenshot to share with your tactical report!</div>
+                  <div className="text-[10px] text-white/40 font-mono-game mt-2 font-bold tracking-widest opacity-50 underline decoration-primary/30">https://fillingdartgame.vercel.app</div>
+                </div>
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={() => {
+                      const siteUrl = "https://fillingdartgame.vercel.app";
+                      const text = `🎯 Tactical Victory on Filling Game! \n🏆 Score: ${gameState.players[gameState.winner!].totalScore} pts\n📊 Batch 1: ${gameState.batch1Scores![0]} - ${gameState.batch1Scores![1]}\n🚀 Play now: ${siteUrl}`;
+                      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                    }}
+                    variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-primary p-0 shadow-lg"
+                  >
+                    <Twitter className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const siteUrl = "https://fillingdartgame.vercel.app";
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`, '_blank');
+                    }}
+                    variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-blue-500 p-0 shadow-lg"
+                  >
+                    <Facebook className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const siteUrl = "https://fillingdartgame.vercel.app";
+                      const text = `🎯 Tactical Victory! Score: ${gameState.players[gameState.winner!].totalScore} pts. \nBatch 1 Breakdown: ${gameState.batch1Scores![0]} vs ${gameState.batch1Scores![1]}. \nJoin the fight at ${siteUrl}`;
+                      window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`, '_blank');
+                    }}
+                    variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-purple-500 p-0 shadow-lg"
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const siteUrl = "https://fillingdartgame.vercel.app";
+                      const summary = `🏆 I won! ${gameState.players[gameState.winner!].totalScore} pts on Filling Game. (B1: ${gameState.batch1Scores![0]}-${gameState.batch1Scores![1]}). \nPlay: ${siteUrl}`;
+                      navigator.clipboard.writeText(summary);
+                      toast.success("Score details copied! Share your screenshot on Instagram.");
+                    }}
+                    variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-pink-500 p-0 shadow-lg"
+                  >
+                    <Instagram className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className={`mt-4 p-3 rounded-xl text-[10px] text-center ${verificationComplete ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-orange-500/10 border border-orange-500/30 text-orange-400'}`}>
+                {verificationComplete ? (
+                  '✅ Verification Complete - Check Verified History Tab'
+                ) : (
+                  '⏳ Switchboard quorum signing your score...'
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+                <Button onClick={resetGame} className="bg-white/10 text-white font-black px-8 py-6 text-lg rounded-xl flex-1 hover:bg-white/20">Play Again</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Top header bar: title + live status, centered above the 3-column layout */}
+        <div className="w-full max-w-[1700px] mb-4 px-2 flex flex-col items-center gap-3">
+          <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
+          <div className="flex flex-wrap items-center justify-center gap-2 glass-panel py-2 px-4 rounded-full border-white/10">
+            <span className="font-mono-game text-[10px] tracking-[0.2em] text-primary animate-pulse uppercase">{gameState.players[gameState.currentPlayer].name}'S TURN</span>
+            <div className="h-4 w-[1px] bg-white/10" />
+            <span className="text-white/60 text-[10px] font-mono-game tracking-[0.2em] uppercase">{gameState.dartsRemaining} DARTS REMAINING</span>
+            <Button variant="ghost" size="sm" onClick={resetGame} className="text-[9px] uppercase tracking-widest text-white/40 hover:text-primary h-6 ml-2">New Game</Button>
+          </div>
+        </div>
+
+        <div className="w-full max-w-[1700px] flex flex-col xl:flex-row gap-6 items-stretch justify-center min-h-0 pb-10">
+          {/* Left: Log */}
+          <div className="xl:w-[320px] w-full flex-shrink-0 flex flex-col h-full order-3 xl:order-1 xl:pt-0">
+            <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl">
+              <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Activity Log</h3>
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              </div>
+              <div className="flex-1 overflow-hidden h-full">
+                <GameLog messages={gameState.logMessages} p1Name={gameState.players[0].name} p2Name={gameState.players[1].name} />
+              </div>
+            </div>
+
+            {/* Target Score Display */}
+            <div className="mt-4 glass-panel rounded-3xl p-5 border-white/10 shadow-2xl animate-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
+                <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
+                  Batch {gameState.batch}
+                </div>
+              </div>
+              {gameState.batch === 2 && gameState.batch1Scores && (
+                <div className="grid grid-cols-2 gap-4 mt-1 mb-4">
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                    <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
+                    <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                    <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
+                    <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
+                  </div>
+                </div>
+              )}
+              {gameState.batch === 1 && (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-white tracking-tighter italic">221.5</span>
+                  <span className="text-[10px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
+                </div>
+              )}
+              {gameState.batch === 2 && gameState.batch1Scores && (
+                <div className="mt-1 space-y-1.5 border-t border-white/5 pt-3">
+                  <div className="text-[9px] font-medium leading-tight text-primary/80">
+                    <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win Batch 2
+                  </div>
+                  <div className="text-[9px] font-medium leading-tight text-secondary/80">
+                    <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win Batch 2
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Center: Board */}
+          <div className="flex-1 flex flex-col items-center justify-between min-w-0 order-1 xl:order-2 py-4">
+            <div className="flex-1 flex items-center justify-center min-h-0">
+              <Dartboard gameState={gameState} onHitNumber={handleHitNumber} onHitRing={handleHitRing} disabled={gameState.gameOver} turnSeconds={turnSeconds} />
+            </div>
+            <div className="flex flex-col items-center gap-4 w-full max-w-md mt-4">
+
+              {!gameState.isVsCPU && (
+                <div className="flex flex-wrap justify-center gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={shareSyncLink}
+                    className="glass-panel border-primary/20 hover:bg-primary/10 text-primary-light text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
+                  >
+                    <Share2 className="w-3 h-3 mr-2" />
+                    Sync Link
+                  </Button>
+                  {makePublic && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const activeMatchId = setupMode === 'invite' ? inviteCode : String(parsedMatchId || '');
+                        const specLink = `${window.location.origin}/watch?match=${activeMatchId}`;
+                        await navigator.clipboard.writeText(specLink);
+                        toast.success("Spectator Link Copied!", { description: "Anyone can watch this live match." });
+                      }}
+                      className="glass-panel border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
+                    >
+                      <Eye className="w-3 h-3 mr-2" />
+                      Spectator Link
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Table — tabs pinned to bottom of column */}
+          <div className="xl:w-[620px] w-full flex-shrink-0 order-2 flex flex-col shadow-2xl">
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {rightColTab === 'stats' ? (
+                <MasterScoringTable gameState={gameState} />
+              ) : (
+                <VerifiedScoreboard />
+              )}
+            </div>
+            {/* Tab Switcher pinned to the bottom of the scoreboard column */}
+            <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mt-3">
+              <button
+                onClick={() => setRightColTab('stats')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'stats' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-primary hover:text-primary hover:bg-primary/10'}`}
+              >
+                <Activity className="w-3 h-3" />
+                Live Match Stats
+              </button>
+              <button
+                onClick={() => setRightColTab('history')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'history' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/10'}`}
+              >
+                <Trophy className="w-3 h-3" />
+                Verified History
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <BatchTransitionOverlay
+          show={showBatchOverlay}
+          scores={gameState.batch1Scores}
+          players={gameState.players}
+          onClose={() => setShowBatchOverlay(false)}
+        />
+
+      </div>
+    </>
   );
 };
 
