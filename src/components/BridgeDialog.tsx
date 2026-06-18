@@ -225,10 +225,14 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
     toast.info(`Initiating bridge of ${numericAmount} USDC from ${sourceChain} to Arc Testnet...`);
 
     try {
-      // Check for API key
+      // ✅ FIXED: Use VITE_CIRCLE_API_KEY (with VITE_ prefix for Vite)
       const apiKey = import.meta.env.VITE_CIRCLE_API_KEY;
-      if (!apiKey || apiKey === 'sandbox_key_placeholder') {
-        throw new Error("Valid Circle API key not configured. Please check environment variables.");
+
+      // Debug log to see if it's loaded
+      console.log('🔑 Circle API Key loaded:', apiKey ? '✅ Yes (starts with ' + apiKey.substring(0, 8) + '...)' : '❌ Missing');
+
+      if (!apiKey || apiKey === 'sandbox_key_placeholder' || apiKey === '') {
+        throw new Error("Valid Circle API key not configured. Please check your .env file.");
       }
 
       const { AppKit } = await import('@circle-fin/app-kit');

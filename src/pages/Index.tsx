@@ -761,7 +761,7 @@ const Index = () => {
   }, [gameStarted, gameState, showBatchOverlay, isDartFlying]);
 
   // ===== Per-turn 10s countdown timer =====
-  const TURN_SECONDS = 10;
+  const TURN_SECONDS = 30;
   const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
 
   // Determine if timer should be active for the current viewer

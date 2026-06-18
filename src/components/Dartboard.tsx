@@ -111,11 +111,11 @@ function resolveSwipeLanding(
   });
 
   // Snap landing exactly onto the chosen gem so the stuck dart looks crisp.
- const snapR = RING_RADII[best.ring].outer * 0.85;
-const [snapX, snapY] = polarToXY(best.ang, snapR);
-return {
-  lx: snapX,
-  ly: snapY,
+  const snapR = RING_RADII[best.ring].outer * 0.85;
+  const [snapX, snapY] = polarToXY(best.ang, snapR);
+  return {
+    lx: snapX,
+    ly: snapY,
     angle: best.ang,
     hitRingIdx: best.ring,
     closestNum: best.num,
@@ -304,21 +304,21 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
 
   // While aiming, show the dart at the press point and angled toward swipe direction.
   const aimDx = aim ? aim.curX - aim.pressX : 0;
-const aimDy = aim ? aim.curY - aim.pressY : 0;
-const swipeDist = Math.hypot(aimDx, aimDy);
-const aimAngle = aim && swipeDist > 5
-  ? (Math.atan2(aimDx, -aimDy) * 180) / Math.PI
-  : 180;
+  const aimDy = aim ? aim.curY - aim.pressY : 0;
+  const swipeDist = Math.hypot(aimDx, aimDy);
+  const aimAngle = aim && swipeDist > 5
+    ? (Math.atan2(aimDx, -aimDy) * 180) / Math.PI
+    : 180;
   return (
     <div className="relative flex flex-col items-center gap-2 select-none mt-0 pb-36 xl:pb-0 overflow-visible">
       <div
-  ref={overlayRef}
-  className="relative touch-none overflow-visible"
-  onPointerMove={onPointerMove}
-  onPointerUp={releaseAim}
-  onPointerCancel={releaseAim}
-  style={{ touchAction: 'none' }}
->
+        ref={overlayRef}
+        className="relative touch-none overflow-visible"
+        onPointerMove={onPointerMove}
+        onPointerUp={releaseAim}
+        onPointerCancel={releaseAim}
+        style={{ touchAction: 'none' }}
+      >
         <svg
           ref={svgRef}
           viewBox="0 0 500 790"
@@ -427,7 +427,7 @@ const aimAngle = aim && swipeDist > 5
             );
           })}
 
-        
+
           {/* Stuck Darts */}
           {stuckDarts && (
             <g pointerEvents="none">
@@ -470,26 +470,26 @@ const aimAngle = aim && swipeDist > 5
 
           {/* Idle / aim dart "handle" */}
           {!dartFlying && !gameState.gameOver && (canAim || aim) && (
-  <g
-    pointerEvents={canAim ? "all" : "none"}
-    style={{ transition: 'opacity 0.2s', cursor: canAim ? 'grab' : 'default' }}
-    onPointerDown={onPointerDown}
-    >
+            <g
+              pointerEvents={canAim ? "all" : "none"}
+              style={{ transition: 'opacity 0.2s', cursor: canAim ? 'grab' : 'default' }}
+              onPointerDown={onPointerDown}
+            >
 
-<rect
-  x={(aim ? aim.curX : handleX) - 40}
-  y={(aim ? aim.curY : handleY) - 150}
-  width="80"
-  height="170"
-  fill="transparent"
-/>
+              <rect
+                x={(aim ? aim.curX : handleX) - 40}
+                y={(aim ? aim.curY : handleY) - 150}
+                width="80"
+                height="170"
+                fill="transparent"
+              />
 
               <image
-  href={cp === 0 ? '/green_dart.png' : '/red_dart.png'}
-  x={(aim ? aim.curX : handleX) - 29}
-y={(aim ? aim.curY - 120 : handleY) - 135 + 15}
-  width="58"
-  height="135"
+                href={cp === 0 ? '/green_dart.png' : '/red_dart.png'}
+                x={(aim ? aim.curX : handleX) - 29}
+                y={(aim ? aim.curY - 120 : handleY) - 135 + 15}
+                width="58"
+                height="135"
                 transform={`rotate(${aimAngle} ${aim ? aim.curX : handleX} ${aim ? aim.curY - 120 : handleY})`}
                 style={{
                   filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.5))',
@@ -498,37 +498,37 @@ y={(aim ? aim.curY - 120 : handleY) - 135 + 15}
               />
             </g>
           )}
-            {/* Hint text below dart */}
-            {!dartFlying && (
-             <text
-               x={handleX}
-                y={handleY + 145}
-                textAnchor="middle"
-                fill="rgba(255,215,0,1)"
-                fontSize="18"
-                fontWeight="800"
-                fontFamily="'Orbitron', sans-serif"
-                letterSpacing="4"
-               >
-                {getHint().toUpperCase()}
-              </text>
-            )}
-            {/* Turn countdown timer below hint */}
-            {!dartFlying && turnSeconds !== null && turnSeconds !== undefined && (
-              <text
-                x={handleX}
-                y={handleY + 100}
-               textAnchor="middle"
-               fill={turnSeconds <= 3 ? '#ff4d6d' : '#00f0ff'}
-               fontSize="22"
-               fontWeight="900"
-               fontFamily="'Orbitron', sans-serif"
-               letterSpacing="3"
-               style={{ filter: `drop-shadow(0 0 6px ${turnSeconds <= 3 ? '#ff4d6d' : '#00f0ff'})` }}
-             >
-               ⏱ {turnSeconds}s
-             </text>
-           )}
+          {/* Hint text below dart */}
+          {!dartFlying && (
+            <text
+              x={handleX}
+              y={handleY + 145}
+              textAnchor="middle"
+              fill="rgba(255,215,0,1)"
+              fontSize="18"
+              fontWeight="800"
+              fontFamily="'Orbitron', sans-serif"
+              letterSpacing="4"
+            >
+              {getHint().toUpperCase()}
+            </text>
+          )}
+          {/* Turn countdown timer below hint */}
+          {!dartFlying && turnSeconds !== null && turnSeconds !== undefined && (
+            <text
+              x={handleX}
+              y={handleY + 100}
+              textAnchor="middle"
+              fill={turnSeconds <= 3 ? '#ff4d6d' : '#00f0ff'}
+              fontSize="22"
+              fontWeight="900"
+              fontFamily="'Orbitron', sans-serif"
+              letterSpacing="3"
+              style={{ filter: `drop-shadow(0 0 6px ${turnSeconds <= 3 ? '#ff4d6d' : '#00f0ff'})` }}
+            >
+              ⏱ {turnSeconds}s
+            </text>
+          )}
         </svg>
       </div>
 
