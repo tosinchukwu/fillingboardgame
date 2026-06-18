@@ -1,9 +1,9 @@
 // vite.config.ts
-import { defineConfig } from "file:///C:/Users/USER/desktop/githubproject/fillgamedart/node_modules/vite/dist/node/index.js";
-import react from "file:///C:/Users/USER/desktop/githubproject/fillgamedart/node_modules/@vitejs/plugin-react-swc/index.js";
+import { defineConfig } from "file:///C:/Users/USER/desktop/githubproject/fillingdartgame/node_modules/vite/dist/node/index.js";
+import react from "file:///C:/Users/USER/desktop/githubproject/fillingdartgame/node_modules/@vitejs/plugin-react-swc/index.js";
 import path from "path";
-import { componentTagger } from "file:///C:/Users/USER/desktop/githubproject/fillgamedart/node_modules/lovable-tagger/dist/index.js";
-var __vite_injected_original_dirname = "C:\\Users\\USER\\desktop\\githubproject\\fillgamedart";
+import { componentTagger } from "file:///C:/Users/USER/desktop/githubproject/fillingdartgame/node_modules/lovable-tagger/dist/index.js";
+var __vite_injected_original_dirname = "C:\\Users\\USER\\desktop\\githubproject\\fillingdartgame";
 var vite_config_default = defineConfig(({ mode }) => ({
   server: {
     host: "::",

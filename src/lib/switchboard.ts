@@ -1,5 +1,5 @@
 /**
- * Switchboard On-Demand client helper for fillgamedart.
+ * Switchboard On-Demand client helper for fillingdartgame.
  *
  * Replaces Chainlink Functions for off-chain game-replay verification.
  *

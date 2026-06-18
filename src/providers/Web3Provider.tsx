@@ -16,7 +16,7 @@ try {
     const metadata = {
         name: 'Filling Game',
         description: 'Filling Game Multichain',
-        url: typeof window !== 'undefined' ? window.location.origin : 'https://fillgamedart.vercel.app',
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://fillingdartgame.vercel.app',
         icons: ['https://avatars.githubusercontent.com/u/37784886']
     }
 

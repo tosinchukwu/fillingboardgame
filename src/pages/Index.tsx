@@ -29,8 +29,6 @@ import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 import VerifiedScoreboard from '../components/VerifiedScoreboard';
 import { NetworkSwitcher } from '../components/NetworkSwitcher';
-// Chainlink Functions source removed — verification now runs inside Switchboard.
-// See `switchboard/scoreVerifier.ts` and `src/lib/switchboard.ts`.
 import { NFTVictoryCard } from '../components/NFTVictoryCard';
 
 // Audio assets (Local paths in public/audio/)
@@ -387,7 +385,7 @@ const Index = () => {
             if (!newState.logMessages) {
               newState.logMessages = [];
             }
-            
+
             // Hit Detection for Animations
             setGameState(prev => {
               if (prev && newState.logMessages.length > prev.logMessages.length) {
@@ -396,10 +394,10 @@ const Index = () => {
                 if (newState.currentPlayer === 1 && (latestMsg.includes('Hit') || latestMsg.includes('landed'))) {
                   const numMatch = latestMsg.match(/#?(\d+)/);
                   const targetNum = numMatch ? parseInt(numMatch[1]) : 14;
-                  
+
                   playSFX('hit');
-                  window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', { 
-                    detail: { target: targetNum } 
+                  window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', {
+                    detail: { target: targetNum }
                   }));
                 }
               }
@@ -1008,7 +1006,7 @@ const Index = () => {
     if (hash && verificationRequestId === '') {
       // Store the hash as request ID for verification
       setVerificationRequestId(hash);
-      
+
       // Poll Verified History to see if our game appears
       const pollInterval = setInterval(async () => {
         try {
@@ -1022,7 +1020,7 @@ const Index = () => {
           console.error("Polling error:", error);
         }
       }, 5000); // Check every 5 seconds
-      
+
       return () => clearInterval(pollInterval);
     }
   }, [hash, verificationRequestId, refetchGameCount]);
@@ -1344,7 +1342,7 @@ const Index = () => {
           >
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] hidden sm:inline">Register Match</span>
-<span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] sm:hidden">Register Match</span>
+            <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] sm:hidden">Register Match</span>
           </a>
         </div>
         <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
@@ -1410,17 +1408,17 @@ const Index = () => {
               )}
 
               <div className="flex justify-center gap-3">
-  <Button onClick={shareGame} variant="ghost" className="bg-white/5 border border-white/10 text-white/80 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10">
-    <Share2 className="w-3 h-3 text-primary" />
-    Invite Friend
-  </Button>
-  <button
-    onClick={() => navigate('/watch')}
-    className="bg-white/5 border border-white/10 text-white/60 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10 transition-all"
-  >
-    📺 Watch Live Matches
-  </button>
-</div>
+                <Button onClick={shareGame} variant="ghost" className="bg-white/5 border border-white/10 text-white/80 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10">
+                  <Share2 className="w-3 h-3 text-primary" />
+                  Invite Friend
+                </Button>
+                <button
+                  onClick={() => navigate('/watch')}
+                  className="bg-white/5 border border-white/10 text-white/60 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10 transition-all"
+                >
+                  📺 Watch Live Matches
+                </button>
+              </div>
               <Button onClick={() => setShowRules(!showRules)} variant="ghost" className="w-full text-white/40 text-[10px] uppercase tracking-widest h-8 mt-2">📜 Game Rules & Strategy</Button>
               {showRules && <RulesScroll />}
             </div>
@@ -1444,16 +1442,16 @@ const Index = () => {
           <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px]">Register Match</span>
         </a>
       </div>
-     <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
-  <NetworkSwitcher />
-  <Button variant="ghost" onClick={() => setIsBridgeOpen(true)} className="h-10 px-3 rounded-xl glass-panel border-white/10 text-white flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest" title="Bridge Funds to Arc">
-    <Coins className="w-3.5 h-3.5 text-primary" />
-    <span>Bridge</span>
-  </Button>
-  <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="w-10 h-10 rounded-xl glass-panel border-white/10 text-white">
-    <Settings className="w-5 h-5" />
-  </Button>
-</div>
+      <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+        <NetworkSwitcher />
+        <Button variant="ghost" onClick={() => setIsBridgeOpen(true)} className="h-10 px-3 rounded-xl glass-panel border-white/10 text-white flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest" title="Bridge Funds to Arc">
+          <Coins className="w-3.5 h-3.5 text-primary" />
+          <span>Bridge</span>
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="w-10 h-10 rounded-xl glass-panel border-white/10 text-white">
+          <Settings className="w-5 h-5" />
+        </Button>
+      </div>
 
       {gameState.gameOver && gameState.winner !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto py-8">
@@ -1528,7 +1526,7 @@ const Index = () => {
                       gameState?.players[gameState.winner!]?.name || "Anonymous";
 
                     // 1. Ask the Switchboard quorum to replay the game and sign the result.
-                     const bundle = await fetchVerifiedUpdate(activeChainId, {
+                    const bundle = await fetchVerifiedUpdate(activeChainId, {
                       hitHistory,
                       winnerName,
                       winnerAddress: address,
@@ -1589,12 +1587,12 @@ const Index = () => {
               <div className="flex flex-col items-center gap-2">
                 <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Broadcast Victory To Command</div>
                 <div className="text-[9px] text-primary/60 italic">📸 Tip: Take a screenshot to share with your tactical report!</div>
-                <div className="text-[10px] text-white/40 font-mono-game mt-2 font-bold tracking-widest opacity-50 underline decoration-primary/30">https://fillgamedart.vercel.app</div>
+                <div className="text-[10px] text-white/40 font-mono-game mt-2 font-bold tracking-widest opacity-50 underline decoration-primary/30">https://fillingdartgame.vercel.app</div>
               </div>
               <div className="flex justify-center gap-4">
                 <Button
                   onClick={() => {
-                    const siteUrl = "https://fillgamedart.vercel.app";
+                    const siteUrl = "https://fillingdartgame.vercel.app";
                     const text = `🎯 Tactical Victory on Filling Game! \n🏆 Score: ${gameState.players[gameState.winner!].totalScore} pts\n📊 Batch 1: ${gameState.batch1Scores![0]} - ${gameState.batch1Scores![1]}\n🚀 Play now: ${siteUrl}`;
                     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
                   }}
@@ -1604,7 +1602,7 @@ const Index = () => {
                 </Button>
                 <Button
                   onClick={() => {
-                    const siteUrl = "https://fillgamedart.vercel.app";
+                    const siteUrl = "https://fillingdartgame.vercel.app";
                     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`, '_blank');
                   }}
                   variant="outline" className="w-12 h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-blue-500 p-0 shadow-lg"
@@ -1613,7 +1611,7 @@ const Index = () => {
                 </Button>
                 <Button
                   onClick={() => {
-                    const siteUrl = "https://fillgamedart.vercel.app";
+                    const siteUrl = "https://fillingdartgame.vercel.app";
                     const text = `🎯 Tactical Victory! Score: ${gameState.players[gameState.winner!].totalScore} pts. \nBatch 1 Breakdown: ${gameState.batch1Scores![0]} vs ${gameState.batch1Scores![1]}. \nJoin the fight at ${siteUrl}`;
                     window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`, '_blank');
                   }}
@@ -1623,7 +1621,7 @@ const Index = () => {
                 </Button>
                 <Button
                   onClick={() => {
-                    const siteUrl = "https://fillgamedart.vercel.app";
+                    const siteUrl = "https://fillingdartgame.vercel.app";
                     const summary = `🏆 I won! ${gameState.players[gameState.winner!].totalScore} pts on Filling Game. (B1: ${gameState.batch1Scores![0]}-${gameState.batch1Scores![1]}). \nPlay: ${siteUrl}`;
                     navigator.clipboard.writeText(summary);
                     toast.success("Score details copied! Share your screenshot on Instagram.");
@@ -1663,7 +1661,7 @@ const Index = () => {
 
       <div className="w-full max-w-[1700px] flex flex-col xl:flex-row gap-6 items-stretch justify-center min-h-0 pb-10">
         {/* Left: Log */}
-       <div className="xl:w-[320px] w-full flex-shrink-0 flex flex-col h-full order-3 xl:order-1 xl:pt-0">
+        <div className="xl:w-[320px] w-full flex-shrink-0 flex flex-col h-full order-3 xl:order-1 xl:pt-0">
           <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl">
             <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
               <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Activity Log</h3>
@@ -1719,7 +1717,7 @@ const Index = () => {
             <Dartboard gameState={gameState} onHitNumber={handleHitNumber} onHitRing={handleHitRing} disabled={gameState.gameOver} turnSeconds={turnSeconds} />
           </div>
           <div className="flex flex-col items-center gap-4 w-full max-w-md mt-4">
-            
+
             {!gameState.isVsCPU && (
               <div className="flex flex-wrap justify-center gap-2 mt-2">
                 <Button

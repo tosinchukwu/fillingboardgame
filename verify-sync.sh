@@ -1,16 +1,16 @@
 #!/bin/bash
 # Synchronization Verification Script
-# Run this to verify both fillgamedart and fillgame are properly synchronized
+# Run this to verify both fillingdartgame and fillgame are properly synchronized
 
 echo "================================================"
-echo "fillgamedart ↔ fillgame Synchronization Check"
+echo "fillingdartgame ↔ fillgame Synchronization Check"
 echo "================================================"
 echo ""
 
-# Check fillgamedart
-echo "1. Checking fillgamedart..."
+# Check fillingdartgame
+echo "1. Checking fillingdartgame..."
 echo "   - Build status:"
-cd fillgamedart 2>/dev/null
+cd fillingdartgame 2>/dev/null
 if npm run build > /dev/null 2>&1; then
   echo "     ✅ Build successful"
 else

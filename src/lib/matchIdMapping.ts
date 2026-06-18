@@ -22,7 +22,7 @@ export async function saveMatchMetadata(
 ): Promise<void> {
   try {
     const numericId = Number(numericMatchId);
-    
+
     const { error } = await supabase.from('match_id_mapping').insert({
       numeric_id: numericId,
       is_casual: isCasual,
@@ -31,11 +31,11 @@ export async function saveMatchMetadata(
     });
 
     if (error) {
-      console.error('[fillgamedart] Error saving match metadata:', error);
+      console.error('[fillingdartgame] Error saving match metadata:', error);
       // Don't throw - metadata is optional
     }
   } catch (err) {
-    console.error('[fillgamedart] Failed to save match metadata:', err);
+    console.error('[fillingdartgame] Failed to save match metadata:', err);
     // Silently fail - metadata is optional, shouldn't break match creation
   }
 }
@@ -57,14 +57,14 @@ export async function getMatchType(numericMatchId: string | number): Promise<'ca
 
     if (error) {
       if (error.code !== 'PGRST116') {
-        console.error('[fillgamedart] Error fetching match type from Supabase:', error);
+        console.error('[fillingdartgame] Error fetching match type from Supabase:', error);
       }
       return undefined;
     }
 
     return data?.is_casual ? 'casual' : 'official';
   } catch (err) {
-    console.error('[fillgamedart] Failed to fetch match type:', err);
+    console.error('[fillingdartgame] Failed to fetch match type:', err);
     return undefined;
   }
 }

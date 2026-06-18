@@ -15,7 +15,7 @@ backwards-compatible.
 | `README-MIGRATION.md`        | This document.                                         |
 
 The off-chain Switchboard Function source lives in `switchboard/scoreVerifier.ts`
-in the **frontend repo (`fillgamedart`)** — upload it to Switchboard once and
+in the **frontend repo (`fillingdartgame`)** — upload it to Switchboard once and
 reference the resulting feed id from every chain's deployment.
 
 ## Why this is cheaper than Chainlink Functions
@@ -63,7 +63,7 @@ imports `FunctionsClient`.
 
 1. Sign in to https://app.switchboard.xyz.
 2. Create a new **Function** (EVM) and upload
-   `fillgamedart/switchboard/scoreVerifier.ts` as the source.
+   `fillingdartgame/switchboard/scoreVerifier.ts` as the source.
 3. Save the resulting **feed id** (`bytes32`). You'll use the SAME feed id
    on every chain you deploy to.
 4. Note the **Switchboard router address** for each target chain — see
@@ -82,11 +82,11 @@ forge script script/DeployScoreboard.s.sol \
 ```
 
 Record each deployed address — you'll paste them into
-`fillgamedart/src/lib/constants.ts` under `VERIFIER_ADDRESS_MAP`.
+`fillingdartgame/src/lib/constants.ts` under `VERIFIER_ADDRESS_MAP`.
 
 ### 5. Wire the frontend
 
-Inside `fillgamedart`:
+Inside `fillingdartgame`:
 
 1. Update `VERIFIER_ADDRESS_MAP` with the new Scoreboard addresses.
 2. Update `SWITCHBOARD_ROUTER_MAP` with the canonical router per chain.

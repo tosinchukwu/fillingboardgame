@@ -27,6 +27,6 @@ def process_image(input_path, output_path):
     img.save(output_path, "PNG")
 
 if __name__ == "__main__":
-    public_dir = r"c:\Users\USER\Desktop\Githubproject\fillgamedart\public"
+    public_dir = r"c:\Users\USER\Desktop\Githubproject\fillingdartgame\public"
     process_image(os.path.join(public_dir, "red_dart.jpg"), os.path.join(public_dir, "red_dart.png"))
     process_image(os.path.join(public_dir, "green_dart.jpg"), os.path.join(public_dir, "green_dart.png"))

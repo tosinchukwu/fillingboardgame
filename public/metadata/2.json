@@ -1,7 +1,7 @@
 {
   "name": "Filling Game Victory #2",
   "description": "This NFT commemorates a glorious victory in the Filling Game Darts Tournament. The owner demonstrated superior strategy and aim.",
-  "image": "https://fillgamedart.vercel.app/gold_dart.png",
+  "image": "https://fillingdartgame.vercel.app/gold_dart.png",
   "attributes": [
     {
       "trait_type": "Edition",
