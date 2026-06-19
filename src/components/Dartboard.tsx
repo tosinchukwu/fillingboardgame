@@ -332,15 +332,19 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
           }}
         >
           <defs>
-            <radialGradient id="ruby-grad" cx="35%" cy="35%" r="65%" fx="25%" fy="25%">
-              <stop offset="0%" stopColor="#FF4D4D" />
-              <stop offset="40%" stopColor="#B30000" />
-              <stop offset="100%" stopColor="#4D0000" />
+            <radialGradient id="ruby-grad" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+              <stop offset="0%" stopColor="#FF6B6B" />
+              <stop offset="30%" stopColor="#CC0000" />
+              <stop offset="100%" stopColor="#660000" />
             </radialGradient>
-            <radialGradient id="emerald-grad" cx="35%" cy="35%" r="65%" fx="25%" fy="25%">
-              <stop offset="0%" stopColor="#4DFF4D" />
-              <stop offset="40%" stopColor="#00B300" />
-              <stop offset="100%" stopColor="#004D00" />
+            <radialGradient id="emerald-grad" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+              <stop offset="0%" stopColor="#6BFF6B" />
+              <stop offset="30%" stopColor="#00AA00" />
+              <stop offset="100%" stopColor="#005500" />
+            </radialGradient>
+            <radialGradient id="closed-grad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#444444" />
+              <stop offset="100%" stopColor="#222222" />
             </radialGradient>
             <filter id="inner-glow">
               <feGaussianBlur stdDeviation="1" result="blur" />
@@ -386,6 +390,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             />
           ))}
 
+          {/* ===== FIXED NUMBER RENDERING WITH PC SUPPORT ===== */}
           {BOARD_LAYOUT.map((pos) => {
             const ringData = RING_RADII[pos.ring];
             const r = ringData.outer;
@@ -394,13 +399,26 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
 
             return (
               <g key={pos.number}>
+                {/* MAIN NUMBER CIRCLE - FIXED FOR PC */}
                 <circle
-                  cx={x} cy={y} r={hitPulse?.id === `num-${pos.number}` ? '26' : '21'}
+                  cx={x}
+                  cy={y}
+                  r={hitPulse?.id === `num-${pos.number}` ? '26' : '21'}
                   fill={isClosed ? '#333' : (pos.color === 'red' ? 'url(#ruby-grad)' : 'url(#emerald-grad)')}
                   className={hitPulse?.id === `num-${pos.number}` ? 'animate-pulse' : ''}
-                  style={{ transition: 'all 0.2s ease-out' }}
+                  style={{
+                    transition: 'all 0.2s ease-out',
+                    // PC FIX: Solid color fallback when gradient fails
+                    backgroundColor: isClosed ? '#333' : (pos.color === 'red' ? '#e63946' : '#2a9d8f'),
+                    // Force GPU rendering on PC
+                    WebkitTransform: 'translateZ(0)',
+                    transform: 'translateZ(0)',
+                    // Ensure visibility
+                    opacity: 1,
+                  }}
                 />
 
+                {/* PROGRESS RING */}
                 {!isClosed && gameState.hitSequences[pos.number].filter((p) => p === cp).length > 0 && (
                   <circle
                     cx={x} cy={y} r="26"
@@ -413,6 +431,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                   />
                 )}
 
+                {/* NUMBER TEXT */}
                 <text
                   x={x}
                   y={y + 1}
@@ -429,6 +448,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               </g>
             );
           })}
+          {/* ===== END FIXED NUMBER RENDERING ===== */}
 
 
           {/* Stuck Darts */}
