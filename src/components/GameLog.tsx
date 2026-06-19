@@ -14,20 +14,20 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
 
   return (
     <div
-      className="bg-black/40 border border-white/10 rounded-2xl p-5 max-h-[300px] min-h-[200px] overflow-y-auto shadow-2xl glass-panel custom-scrollbar"
+      className="bg-black/40 border border-white/10 rounded-2xl p-3 max-h-[300px] min-h-[200px] overflow-y-auto shadow-2xl glass-panel custom-scrollbar"
       style={{ borderColor: colors.border }}
     >
       <h4
-        className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 font-mono-game border-b border-white/10 pb-3 flex items-center justify-between"
+        className="text-[9px] font-bold uppercase tracking-[0.2em] mb-3 font-mono-game border-b border-white/10 pb-2 flex items-center justify-between"
         style={{ color: colors.accent }}
       >
-        Tactical Game Log
-        <span className="text-[9px] text-white/30 animate-pulse">Live Feed</span>
+        Tactical Log
+        <span className="text-[8px] text-white/30 animate-pulse">Live</span>
       </h4>
-      <div className="space-y-3">
+      <div className="space-y-2">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-48 border-2 border-dashed border-white/5 rounded-xl">
-            <p className="text-[10px] text-white/20 uppercase tracking-widest font-mono-game animate-pulse">Waiting for first engagement...</p>
+          <div className="flex items-center justify-center h-32 border-2 border-dashed border-white/5 rounded-xl">
+            <p className="text-[9px] text-white/20 uppercase tracking-widest font-mono-game animate-pulse">Waiting...</p>
           </div>
         ) : (
           [...messages].reverse().slice(0, 30).map((msg, i) => {
@@ -60,10 +60,10 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
             return (
               <div
                 key={i}
-                className={`text-[12px] sm:text-[11px] font-medium font-mono-game leading-relaxed border-l-2 pl-4 py-3 sm:py-2 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
+                className={`text-[10px] sm:text-[10px] font-medium font-mono-game leading-relaxed border-l-2 pl-3 py-1.5 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
                 style={isP1 ? { borderColor: colors.accent } : undefined}
               >
-                <span className="opacity-100 group-hover:opacity-100 transition-opacity">{displayMsg}</span>
+                <span className="opacity-100 group-hover:opacity-100 transition-opacity truncate">{displayMsg}</span>
               </div>
             );
           })

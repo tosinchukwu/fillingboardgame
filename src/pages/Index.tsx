@@ -317,6 +317,18 @@ const Index = () => {
   }, [gameState?.batch, gameState?.batch1Scores]);
 
   const { address, isConnected, chain } = useAccount();
+
+  // ===== DETECT WALLET DISCONNECT =====
+  useEffect(() => {
+    // If wallet disconnects during a game, return to landing page
+    if (!isConnected && gameStarted) {
+      resetGame();
+      toast.info("Wallet disconnected. Returning to main menu.", {
+        duration: 3000,
+        icon: "🔌",
+      });
+    }
+  }, [isConnected, gameStarted]);
   const activeChainId = chain?.id || SUPPORTED_CHAINS[0].id;
   const activeContractAddress = CONTRACT_ADDRESS_MAP[activeChainId] || CONTRACT_ADDRESS_MAP[SUPPORTED_CHAINS[0].id];
   const activeVerifierAddress = VERIFIER_ADDRESS_MAP[activeChainId] || VERIFIER_ADDRESS_MAP[SUPPORTED_CHAINS[0].id];
@@ -657,14 +669,14 @@ const Index = () => {
   };
 
   const rotateBackground = () => {
-  setBackground('custom');
-  setCustomWallpaperUrl(batch2BackgroundUrl);
-  // Toast notification only - no overlay popup
-  toast.info(`🌄 Background changed to Batch 2 Arena!`, {
-    duration: 2000,
-    icon: '🎯',
-  });
-};
+    setBackground('custom');
+    setCustomWallpaperUrl(batch2BackgroundUrl);
+    // Toast notification only - no overlay popup
+    toast.info(`🌄 Background changed to Batch 2 Arena!`, {
+      duration: 2000,
+      icon: '🎯',
+    });
+  };
 
   const togglePause = () => {
     setIsPaused(!isPaused);
@@ -1431,18 +1443,17 @@ const Index = () => {
                 ) : renderSetupContent()}
 
                 {setupMode === 'solo' && (
-  <Button 
-    onClick={startSoloGame} 
-    disabled={!isConnected}
-    className={`w-full h-14 font-black text-xl rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.2)] transition-all ${
-      isConnected 
-        ? 'bg-primary text-white hover:scale-[1.02] active:scale-[0.98]' 
-        : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
-    }`}
-  >
-    {isConnected ? '🚀 Start Game' : '🔌 Connect Wallet to Start'}
-  </Button>
-)}
+                  <Button
+                    onClick={startSoloGame}
+                    disabled={!isConnected}
+                    className={`w-full h-14 font-black text-xl rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.2)] transition-all ${isConnected
+                        ? 'bg-primary text-white hover:scale-[1.02] active:scale-[0.98]'
+                        : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                      }`}
+                  >
+                    {isConnected ? '🚀 Start Game' : '🔌 Connect Wallet to Start'}
+                  </Button>
+                )}
 
                 <div className="flex justify-center gap-3">
                   <button
@@ -1749,34 +1760,34 @@ const Index = () => {
 
             {/* Game Log Panel */}
             <div className="w-full max-w-md mx-auto">
-  <button
-    onClick={() => setIsLogExpanded(!isLogExpanded)}
-    className="w-full flex items-center justify-between p-3 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
-  >
-    <div className="flex items-center gap-2">
-      <span className="text-lg">📜</span>
-      <span className="text-[11px] font-black uppercase tracking-widest text-white/80">
-        Game Activity Log
-      </span>
-      <span className="text-[9px] text-white/30 font-mono">
-        ({gameState.logMessages.length})
-      </span>
-    </div>
-    <span className={`text-white/40 transition-transform ${isLogExpanded ? 'rotate-180' : ''}`}>
-      ▼
-    </span>
-  </button>
-  {isLogExpanded && (
-    <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
-      <GameLog
-        messages={gameState.logMessages}
-        p1Name={gameState.players[0].name}
-        p2Name={gameState.players[1].name}
-        theme={theme}
-      />
-    </div>
-  )}
-</div>
+              <button
+                onClick={() => setIsLogExpanded(!isLogExpanded)}
+                className="w-full flex items-center justify-between p-3 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📜</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-white/80">
+                    Game Activity Log
+                  </span>
+                  <span className="text-[9px] text-white/30 font-mono">
+                    ({gameState.logMessages.length})
+                  </span>
+                </div>
+                <span className={`text-white/40 transition-transform ${isLogExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              {isLogExpanded && (
+                <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
+                  <GameLog
+                    messages={gameState.logMessages}
+                    p1Name={gameState.players[0].name}
+                    p2Name={gameState.players[1].name}
+                    theme={theme}
+                  />
+                </div>
+              )}
+            </div>
             {/* Stats Panel */}
             <div className="w-full">
               <button
@@ -1844,7 +1855,7 @@ const Index = () => {
             {/* Bottom Buttons on Mobile */}
             {!gameState.isVsCPU && (
               <div className="w-full flex flex-wrap justify-center gap-2 mt-2">
-               
+
                 {makePublic && (
                   <Button
                     variant="outline"
@@ -1869,22 +1880,22 @@ const Index = () => {
           <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
 
             {/* LEFT COLUMN: Game Log + Target Score */}
-            <div className="flex flex-col h-full gap-4">
-              {/* Game Log */}
-              <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl">
-                <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
-                  <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Activity Log</h3>
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                </div>
-                <div className="flex-1 overflow-hidden h-full">
-                  <GameLog
-                    messages={gameState.logMessages}
-                    p1Name={gameState.players[0].name}
-                    p2Name={gameState.players[1].name}
-                    theme={theme}
-                  />
-                </div>
-              </div>
+<div className="flex flex-col h-full gap-4">
+  {/* Game Log - Narrower width */}
+  <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-[280px]">
+    <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between">
+      <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
+      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+    </div>
+    <div className="flex-1 overflow-hidden h-full">
+      <GameLog
+        messages={gameState.logMessages}
+        p1Name={gameState.players[0].name}
+        p2Name={gameState.players[1].name}
+        theme={theme}
+      />
+    </div>
+  </div>
 
               {/* Target Score Display */}
               <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl">
@@ -1937,7 +1948,7 @@ const Index = () => {
               />
               {!gameState.isVsCPU && (
                 <div className="flex flex-wrap justify-center gap-2 mt-4">
-                  
+
                   {makePublic && (
                     <Button
                       variant="outline"
@@ -1987,7 +1998,7 @@ const Index = () => {
           </div>
         </div>
 
-        
+
         <BatchTransitionOverlay
           show={showBatchOverlay}
           scores={gameState.batch1Scores}
