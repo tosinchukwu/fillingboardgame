@@ -1927,23 +1927,24 @@ const Index = () => {
           {/* === ROW 2: PC 3-Column Layout (ONLY on desktop) === */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
 
-            {/* LEFT COLUMN: Game Log + Target Score - WIDER */}
-            <div className="flex flex-col h-full gap-4 w-[420px] flex-shrink-0">
-              {/* Game Log */}
-              <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full h-[500px] min-h-[400px]">
-                <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between shrink-0">
-                  <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                </div>
-                <div className="flex-1 overflow-y-auto overflow-x-hidden h-full">
-                  <GameLog
-                    messages={gameState.logMessages}
-                    p1Name={gameState.players[0].name}
-                    p2Name={gameState.players[1].name}
-                    theme={theme}
-                  />
-                </div>
-              </div>
+            
+{/* LEFT COLUMN: Game Log + Target Score - WIDER */}
+<div className="flex flex-col h-full gap-4 w-[420px] flex-shrink-0">
+  {/* Game Log */}
+  <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full">
+    <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between shrink-0">
+      <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
+      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+    </div>
+    <div className="flex-1 overflow-y-auto overflow-x-hidden h-full p-2">
+      <GameLog
+        messages={gameState.logMessages}
+        p1Name={gameState.players[0].name}
+        p2Name={gameState.players[1].name}
+        theme={theme}
+      />
+    </div>
+  </div>
               {/* Target Score Display - Same width as Game Log */}
               <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl w-full shrink-0">
                 <div className="flex items-center justify-between mb-2">
