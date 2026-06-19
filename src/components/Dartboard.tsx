@@ -140,6 +140,16 @@ function synthesizeSwipeFor(target: { ring: number; angle: number }): { dx: numb
 const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing, disabled, isSpectator = false, turnSeconds = null, theme = 'avalanche' }) => {
   const colors = useTheme(theme);
   const cp = gameState.currentPlayer;
+    // 🔥 Desktop detection for responsive sizing
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [boardPhase, setBoardPhase] = useState<BoardPhase>('idle');
   const [stuckDarts, setStuckDarts] = useState<{ x: number; y: number; angle: number; tilt: number; playerIdx: number } | null>(null);
@@ -391,11 +401,20 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
           ))}
 
           {/* ===== FIXED NUMBER RENDERING WITH PC SUPPORT ===== */}
-          {BOARD_LAYOUT.map((pos) => {
+                    {BOARD_LAYOUT.map((pos) => {
             const ringData = RING_RADII[pos.ring];
             const r = ringData.outer;
             const [x, y] = polarToXY(pos.angle, r);
             const isClosed = gameState.closedNumbers.has(pos.number);
+            const playerHits = gameState.hitSequences[pos.number].filter((p) => p === cp).length;
+            const isHit = playerHits > 0;
+            const hitProgress = Math.min(playerHits / pos.number, 1);
+            
+            // Responsive sizes based on desktop/mobile
+            const circleRadius = isDesktop ? 24 : 21;
+            const fontSize = isDesktop ? 24 : 20;
+            const pulseRadius = isDesktop ? 28 : 24;
+            const progressRadius = isDesktop ? 28 : 24;
 
             return (
               <g key={pos.number}>
@@ -403,8 +422,11 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                 <circle
                   cx={x}
                   cy={y}
-                  r={hitPulse?.id === `num-${pos.number}` ? '26' : '21'}
+                  
+                  r={hitPulse?.id === `num-${pos.number}` ? pulseRadius : circleRadius}
                   fill={isClosed ? '#333' : (pos.color === 'red' ? 'url(#ruby-grad)' : 'url(#emerald-grad)')}
+                  stroke={isClosed ? '#555' : (pos.color === 'red' ? '#8B0000' : '#006400')}
+                  strokeWidth={isDesktop ? '2.5' : '2'}
                   className={hitPulse?.id === `num-${pos.number}` ? 'animate-pulse' : ''}
                   style={{
                     transition: 'all 0.2s ease-out',
@@ -419,15 +441,17 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                 />
 
                 {/* PROGRESS RING */}
-                {!isClosed && gameState.hitSequences[pos.number].filter((p) => p === cp).length > 0 && (
+                {!isClosed && isHit && (
                   <circle
-                    cx={x} cy={y} r="26"
+                    cx={x} cy={y} 
+                    r={progressRadius}
                     fill="none"
                     stroke={pos.color === 'red' ? '#e63946' : '#2a9d8f'}
-                    strokeWidth="4"
-                    strokeDasharray={`${(Math.min(gameState.hitSequences[pos.number].filter((p) => p === cp).length / pos.number, 1)) * (2 * Math.PI * 26)} ${2 * Math.PI * 26}`}
+                    strokeWidth={isDesktop ? '4' : '3.5'}
+                    strokeDasharray={`${hitProgress * (2 * Math.PI * progressRadius)} ${2 * Math.PI * progressRadius}`}
                     transform={`rotate(-90 ${x} ${y})`}
                     strokeLinecap="round"
+                    style={{ transition: 'stroke-dasharray 0.3s ease' }}
                   />
                 )}
 
@@ -438,10 +462,22 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                   textAnchor="middle"
                   dominantBaseline="central"
                   fill={isClosed ? '#888' : '#FFFFFF'}
-                  fontSize="22"
-                  fontWeight="800"
-                  fontFamily="'Orbitron', sans-serif"
-                  style={{ textShadow: isClosed ? 'none' : '0 2px 4px rgba(0, 0, 0, 0.4)' }}
+                  fontSize={fontSize}
+                  fontWeight="900"
+                  fontFamily="'Orbitron', 'Arial Black', 'Helvetica Neue', sans-serif"
+                  style={{ 
+                    textShadow: isClosed 
+                      ? 'none' 
+                      : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0,0,0,0.3)',
+                    paintOrder: 'stroke fill',
+                    stroke: isClosed ? 'none' : 'rgba(0,0,0,0.5)',
+                    strokeWidth: isDesktop ? '1.5px' : '1px',
+                    letterSpacing: '0.5px',
+                    fontVariantNumeric: 'tabular-nums',
+                    textRendering: 'geometricPrecision',
+                    WebkitFontSmoothing: 'antialiased',
+                    MozOsxFontSmoothing: 'grayscale',
+                  }}
                 >
                   {pos.number}
                 </text>

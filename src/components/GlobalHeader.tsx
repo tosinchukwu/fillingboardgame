@@ -88,7 +88,6 @@ export const GlobalHeader = ({
   const RegisterButton = () => (
     <a
       href="https://fillinggame.vercel.app/"
-      target="_blank"
       rel="noopener noreferrer"
       className="flex items-center gap-2 py-2 px-4 rounded-xl transition-all h-10"
       style={{ 
