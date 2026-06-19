@@ -58,9 +58,10 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
             }
 
             return (
+              // ✅ UPDATED: Better mobile readability
               <div
                 key={i}
-                className={`text-[11px] font-medium font-mono-game leading-relaxed border-l-2 pl-4 py-2 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
+                className={`text-[12px] sm:text-[11px] font-medium font-mono-game leading-relaxed border-l-2 pl-4 py-3 sm:py-2 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
                 style={isP1 ? { borderColor: colors.accent } : undefined}
               >
                 <span className="opacity-100 group-hover:opacity-100 transition-opacity">{displayMsg}</span>

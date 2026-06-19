@@ -325,7 +325,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
         <svg
           ref={svgRef}
           viewBox="0 0 500 790"
-          className="w-[280px] h-[442px] sm:w-[380px] sm:h-[600px] md:w-[450px] md:h-[711px] overflow-visible"
+          className="w-[320px] h-[500px] sm:w-[380px] sm:h-[600px] md:w-[450px] md:h-[711px] overflow-visible"
           style={{
             filter: 'none',
             cursor: canAim ? (boardPhase === 'aiming' ? 'grabbing' : 'grab') : 'default',

@@ -1517,15 +1517,16 @@ const Index = () => {
           <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
 
           <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="w-full max-w-md space-y-8 text-center glass-panel p-10 rounded-[2rem] neon-border-theme">
+            <div className="w-full max-w-md space-y-8 text-center glass-panel p-6 sm:p-10 rounded-[1.5rem] sm:rounded-[2rem] neon-border-theme">
               <h1 className="text-6xl text-white tracking-[0.2em] mb-2">FILLING GAME</h1>
               <p className="text-primary text-sm font-mono-game uppercase tracking-[0.3em] opacity-80">Strategic Dart Simulation</p>
               <div className="space-y-6 pt-4">
                 {/* Tab Switcher */}
-                <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
+                <div className="grid grid-cols-2 sm:flex p-1 bg-white/5 rounded-xl border border-white/10 gap-1 sm:gap-0">
                   <button
                     onClick={() => setSetupMode('solo')}
-                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'solo' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
+                    className={`flex-1 py-2.5 sm:py-2 text-[10px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg transition-all touch-target ${setupMode === 'solo' ? 'bg-primary text-white shadow-lg' : 'text-white/60 hover:text-white/80'
+                      }`}
                   >
                     You Vs CPU
                   </button>
@@ -1829,7 +1830,7 @@ const Index = () => {
         {/* Top header bar: title + live status, centered above the 3-column layout */}
         <div className="w-full max-w-[1700px] mb-4 px-2 flex flex-col items-center gap-3">
           <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-4 rounded-full shadow-lg">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
             {/* Turn Info */}
             <span className="font-mono-game text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
               {gameState.players[gameState.currentPlayer].name}'S TURN
@@ -1856,7 +1857,7 @@ const Index = () => {
             <Button
               size="sm"
               onClick={togglePause}
-              className={`text-[10px] font-bold uppercase tracking-widest h-7 px-3 rounded-lg transition-all ${isPaused
+              className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest h-8 sm:h-7 px-2.5 sm:px-3 rounded-lg transition-all touch-target ${isPaused
                 ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'
                 : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/30'
                 }`}

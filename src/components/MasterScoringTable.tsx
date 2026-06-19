@@ -109,23 +109,25 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState, them
             </div>
 
             <div className="flex-1 overflow-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-black/40 text-[9px] uppercase tracking-widest text-white/40 border-b border-white/10">
-                            <th className="py-3 px-3 font-black">Dart No</th>
-                            <th className="py-3 px-3 font-black">{gameState.players[0].name.toUpperCase()} (Hit Position)</th>
-                            <th className="py-3 px-3 font-black">{gameState.players[1].name.toUpperCase()} (Hit Position)</th>
-                            <th className="py-3 px-3 font-black text-center">Filler +2 (Who Earned)</th>
-                            <th className="py-3 px-3 font-black text-center">Top Filler +7</th>
-                            <th className="py-3 px-3 font-black text-center">Fill Up +10</th>
-                            <th className="py-3 px-3 font-black text-center">{gameState.players[0].name.toUpperCase()} Total</th>
-                            <th className="py-3 px-3 font-black text-center">{gameState.players[1].name.toUpperCase()} Total</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1).map(renderRow)}
-                    </tbody>
-                </table>
+                <div className="min-w-[600px] sm:min-w-0">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-black/40 text-[9px] uppercase tracking-widest text-white/40 border-b border-white/10">
+                                <th className="py-3 px-3 font-black">Dart No</th>
+                                <th className="py-3 px-3 font-black">{gameState.players[0].name.toUpperCase()} (Hit Position)</th>
+                                <th className="py-3 px-3 font-black">{gameState.players[1].name.toUpperCase()} (Hit Position)</th>
+                                <th className="py-3 px-3 font-black text-center">Filler +2 (Who Earned)</th>
+                                <th className="py-3 px-3 font-black text-center">Top Filler +7</th>
+                                <th className="py-3 px-3 font-black text-center">Fill Up +10</th>
+                                <th className="py-3 px-3 font-black text-center">{gameState.players[0].name.toUpperCase()} Total</th>
+                                <th className="py-3 px-3 font-black text-center">{gameState.players[1].name.toUpperCase()} Total</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1).map(renderRow)}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div className="bg-black/40 p-4 border-t border-white/10 flex justify-between items-center font-mono-game">

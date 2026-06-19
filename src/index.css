@@ -342,3 +342,70 @@ body.theme-midnight {
     }
   }
 }
+
+/* ============================================================ */
+/* 📱 MOBILE OPTIMIZATION - Better Readability                   */
+/* ============================================================ */
+
+/* Base font size for mobile */
+@media (max-width: 640px) {
+  html {
+    font-size: 16px;
+    /* Base size for better readability */
+  }
+
+  body {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Better touch targets */
+  button,
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improved contrast for mobile */
+  .glass-panel {
+    background: rgba(15, 23, 42, 0.92) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+
+  /* Better text contrast */
+  .text-mobile-readable {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .text-mobile-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  /* Prevent zoom on input focus */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Scrollbar styling for better visibility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
