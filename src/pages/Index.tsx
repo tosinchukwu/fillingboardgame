@@ -1732,198 +1732,285 @@ const Index = () => {
         </div>
 
         {/* ===== MOBILE-FIRST LAYOUT ===== */}
-        <div className="w-full max-w-[1700px] flex flex-col gap-4 sm:gap-6 pb-10">
+        {/* ===== GAME LAYOUT ===== */}
+<div className="w-full max-w-[1700px] flex flex-col gap-4 sm:gap-6 pb-10">
 
-          {/* === ROW 1: Game Header === */}
-          <div className="w-full">
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
-              <span className="font-mono-game text-[10px] sm:text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
-                {gameState.players[gameState.currentPlayer].name}'S TURN
-              </span>
-              <div className="h-4 w-[1px] bg-white/20" />
-              <span className="text-white/80 text-[10px] sm:text-[11px] font-mono-game tracking-[0.2em] uppercase font-semibold">
-                {gameState.dartsRemaining} DARTS
-              </span>
-              {isPaused && (
-                <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-black text-yellow-300 animate-pulse bg-yellow-500/30 px-2 py-0.5 rounded-full border border-yellow-500/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-                  PAUSED
-                </span>
-              )}
-              <div className="h-4 w-[1px] bg-white/20 hidden sm:block" />
-              <Button
-                size="sm"
-                onClick={togglePause}
-                className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest h-7 sm:h-7 px-2 sm:px-3 rounded-lg transition-all touch-target ${isPaused
-                  ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'
-                  : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/30'
-                  }`}
-              >
-                {isPaused ? '▶️' : '⏸️'}
-                <span className="hidden sm:inline">{isPaused ? 'Resume' : 'Pause'}</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={exitGame}
-                className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest h-7 sm:h-7 px-2 sm:px-3 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all touch-target"
-              >
-                ✕
-                <span className="hidden sm:inline">Exit</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={resetGame}
-                className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest h-7 sm:h-7 px-2 sm:px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 border border-white/10 transition-all touch-target"
-              >
-                <span className="hidden sm:inline">New</span> Game
-              </Button>
+  {/* === ROW 1: Dartboard (Full width) === */}
+  <div className="w-full flex justify-center">
+    <div className="w-full max-w-[600px]">
+      <Dartboard
+        gameState={gameState}
+        onHitNumber={handleHitNumber}
+        onHitRing={handleHitRing}
+        disabled={gameState.gameOver}
+        turnSeconds={turnSeconds}
+        theme={theme}
+      />
+    </div>
+  </div>
+
+  {/* === ROW 2: Collapsible Panels (Mobile) / 3-Column Layout (PC) === */}
+
+  {/* Mobile: Collapsible Panels */}
+  <div className="block lg:hidden w-full grid grid-cols-1 gap-4">
+    {/* Left Panel: Game Log */}
+    <div className="w-full">
+      <button
+        onClick={() => setIsLogExpanded(!isLogExpanded)}
+        className="w-full flex items-center justify-between p-3 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📜</span>
+          <span className="text-[11px] font-black uppercase tracking-widest text-white/80">
+            Game Activity Log
+          </span>
+          <span className="text-[9px] text-white/30 font-mono">
+            ({gameState.logMessages.length})
+          </span>
+        </div>
+        <span className={`text-white/40 transition-transform ${isLogExpanded ? 'rotate-180' : ''}`}>
+          ▼
+        </span>
+      </button>
+      {isLogExpanded && (
+        <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
+          <GameLog
+            messages={gameState.logMessages}
+            p1Name={gameState.players[0].name}
+            p2Name={gameState.players[1].name}
+            theme={theme}
+          />
+        </div>
+      )}
+    </div>
+
+    {/* Right Panel: Stats */}
+    <div className="w-full">
+      <button
+        onClick={() => setIsScoresExpanded(!isScoresExpanded)}
+        className="w-full flex items-center justify-between p-3 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📊</span>
+          <span className="text-[11px] font-black uppercase tracking-widest text-white/80">
+            Live Match Stats
+          </span>
+          <span className="text-[9px] text-white/30 font-mono">
+            Batch {gameState.batch}
+          </span>
+        </div>
+        <span className={`text-white/40 transition-transform ${isScoresExpanded ? 'rotate-180' : ''}`}>
+          ▼
+        </span>
+      </button>
+      {isScoresExpanded && (
+        <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
+          <div className="glass-panel rounded-3xl p-4 border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
+              <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
+                Batch {gameState.batch}
+              </div>
+            </div>
+            {gameState.batch === 2 && gameState.batch1Scores && (
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                  <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
+                  <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                  <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
+                  <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
+                </div>
+              </div>
+            )}
+            {gameState.batch === 1 && (
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-white tracking-tighter italic">221.5</span>
+                <span className="text-[8px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
+              </div>
+            )}
+            {gameState.batch === 2 && gameState.batch1Scores && (
+              <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
+                <div className="text-[8px] font-medium leading-tight text-primary/80">
+                  <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win
+                </div>
+                <div className="text-[8px] font-medium leading-tight text-secondary/80">
+                  <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="mt-3">
+            <MasterScoringTable gameState={gameState} theme={theme} />
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* PC: Original 3-Column Layout */}
+  <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
+    {/* Left: Game Log */}
+    <div className="xl:w-[320px] w-full flex-shrink-0 flex flex-col h-full">
+      <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl">
+        <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
+          <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Activity Log</h3>
+          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+        </div>
+        <div className="flex-1 overflow-hidden h-full">
+          <GameLog
+            messages={gameState.logMessages}
+            p1Name={gameState.players[0].name}
+            p2Name={gameState.players[1].name}
+            theme={theme}
+          />
+        </div>
+      </div>
+
+      {/* Target Score Display */}
+      <div className="mt-4 glass-panel rounded-3xl p-5 border-white/10 shadow-2xl">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
+          <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
+            Batch {gameState.batch}
+          </div>
+        </div>
+        {gameState.batch === 2 && gameState.batch1Scores && (
+          <div className="grid grid-cols-2 gap-4 mt-1 mb-4">
+            <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+              <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
+              <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
+            </div>
+            <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+              <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
+              <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
             </div>
           </div>
-
-          {/* === ROW 2: Dartboard === */}
-          <div className="w-full flex justify-center">
-            <div className="w-full max-w-[600px]">
-              <Dartboard
-                gameState={gameState}
-                onHitNumber={handleHitNumber}
-                onHitRing={handleHitRing}
-                disabled={gameState.gameOver}
-                turnSeconds={turnSeconds}
-                theme={theme}
-              />
+        )}
+        {gameState.batch === 1 && (
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-black text-white tracking-tighter italic">221.5</span>
+            <span className="text-[10px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
+          </div>
+        )}
+        {gameState.batch === 2 && gameState.batch1Scores && (
+          <div className="mt-1 space-y-1.5 border-t border-white/5 pt-3">
+            <div className="text-[9px] font-medium leading-tight text-primary/80">
+              <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win Batch 2
+            </div>
+            <div className="text-[9px] font-medium leading-tight text-secondary/80">
+              <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win Batch 2
             </div>
           </div>
+        )}
+      </div>
+    </div>
 
-          {/* === ROW 3: Collapsible Panels === */}
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Left Panel: Game Log */}
-            <div className="w-full">
-              <button
-                onClick={() => setIsLogExpanded(!isLogExpanded)}
-                className="w-full flex items-center justify-between p-3 sm:p-4 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📜</span>
-                  <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-white/80">
-                    Game Activity Log
-                  </span>
-                  <span className="text-[9px] text-white/30 font-mono">
-                    ({gameState.logMessages.length})
-                  </span>
-                </div>
-                <span className={`text-white/40 transition-transform ${isLogExpanded ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </button>
-              {isLogExpanded && (
-                <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
-                  <GameLog
-                    messages={gameState.logMessages}
-                    p1Name={gameState.players[0].name}
-                    p2Name={gameState.players[1].name}
-                    theme={theme}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Right Panel: Stats */}
-            <div className="w-full">
-              <button
-                onClick={() => setIsScoresExpanded(!isScoresExpanded)}
-                className="w-full flex items-center justify-between p-3 sm:p-4 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📊</span>
-                  <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-white/80">
-                    Live Match Stats
-                  </span>
-                  <span className="text-[9px] text-white/30 font-mono">
-                    Batch {gameState.batch}
-                  </span>
-                </div>
-                <span className={`text-white/40 transition-transform ${isScoresExpanded ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </button>
-              {isScoresExpanded && (
-                <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
-                  <div className="glass-panel rounded-3xl p-4 sm:p-5 border-white/10 shadow-2xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
-                      <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
-                        Batch {gameState.batch}
-                      </div>
-                    </div>
-                    {gameState.batch === 2 && gameState.batch1Scores && (
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                          <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
-                          <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                          <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
-                          <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
-                        </div>
-                      </div>
-                    )}
-                    {gameState.batch === 1 && (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl sm:text-3xl font-black text-white tracking-tighter italic">221.5</span>
-                        <span className="text-[8px] sm:text-[10px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
-                      </div>
-                    )}
-                    {gameState.batch === 2 && gameState.batch1Scores && (
-                      <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
-                        <div className="text-[8px] sm:text-[9px] font-medium leading-tight text-primary/80">
-                          <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win
-                        </div>
-                        <div className="text-[8px] sm:text-[9px] font-medium leading-tight text-secondary/80">
-                          <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <MasterScoringTable gameState={gameState} theme={theme} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* === ROW 4: Bottom Buttons === */}
-          {!gameState.isVsCPU && (
-            <div className="w-full flex flex-wrap justify-center gap-2 mt-2">
+    {/* Center: Board */}
+    <div className="flex-1 flex flex-col items-center justify-between py-4">
+      <div className="flex-1 flex items-center justify-center min-h-0">
+        <Dartboard
+          gameState={gameState}
+          onHitNumber={handleHitNumber}
+          onHitRing={handleHitRing}
+          disabled={gameState.gameOver}
+          turnSeconds={turnSeconds}
+          theme={theme}
+        />
+      </div>
+      <div className="flex flex-col items-center gap-4 w-full max-w-md mt-4">
+        {!gameState.isVsCPU && (
+          <div className="flex flex-wrap justify-center gap-2 mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shareSyncLink}
+              className="glass-panel border-primary/20 hover:bg-primary/10 text-primary-light text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
+            >
+              <Share2 className="w-3 h-3 mr-2" />
+              Sync Link
+            </Button>
+            {makePublic && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={shareSyncLink}
-                className="glass-panel border-primary/20 hover:bg-primary/10 text-[10px] tracking-widest uppercase font-black px-3 sm:px-4 py-2 sm:py-3 rounded-xl touch-target"
+                onClick={async () => {
+                  const activeMatchId = setupMode === 'invite' ? inviteCode : String(parsedMatchId || '');
+                  const specLink = `${window.location.origin}/watch?match=${activeMatchId}`;
+                  await navigator.clipboard.writeText(specLink);
+                  toast.success("Spectator Link Copied!", { description: "Anyone can watch this live match." });
+                }}
+                className="glass-panel border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
               >
-                <Share2 className="w-3 h-3 sm:w-3 sm:h-3 mr-1" />
-                Sync Link
+                <Eye className="w-3 h-3 mr-2" />
+                Spectator Link
               </Button>
-              {makePublic && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    const activeMatchId = setupMode === 'invite' ? inviteCode : String(parsedMatchId || '');
-                    const specLink = `${window.location.origin}/watch?match=${activeMatchId}`;
-                    await navigator.clipboard.writeText(specLink);
-                    toast.success("Spectator Link Copied!", { description: "Anyone can watch this live match." });
-                  }}
-                  className="glass-panel border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 text-[10px] tracking-widest uppercase font-black px-3 sm:px-4 py-2 sm:py-3 rounded-xl touch-target"
-                >
-                  <Eye className="w-3 h-3 sm:w-3 sm:h-3 mr-1" />
-                  Spectator Link
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Right: Scoring Table */}
+    <div className="xl:w-[620px] w-full flex-shrink-0 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {rightColTab === 'stats' ? (
+          <MasterScoringTable gameState={gameState} theme={theme} />
+        ) : (
+          <VerifiedScoreboard />
+        )}
+      </div>
+      <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mt-3">
+        <button
+          onClick={() => setRightColTab('stats')}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'stats' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-primary hover:text-primary hover:bg-primary/10'}`}
+        >
+          <Activity className="w-3 h-3" />
+          Live Match Stats
+        </button>
+        <button
+          onClick={() => setRightColTab('history')}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'history' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/10'}`}
+        >
+          <Trophy className="w-3 h-3" />
+          Verified History
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {/* === ROW 3: Bottom Buttons (Sync Link, Spectator) - Only show on mobile when panels are collapsed === */}
+  {!gameState.isVsCPU && (
+    <div className="block lg:hidden w-full flex flex-wrap justify-center gap-2 mt-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={shareSyncLink}
+        className="glass-panel border-primary/20 hover:bg-primary/10 text-[10px] tracking-widest uppercase font-black px-3 py-2 rounded-xl touch-target"
+      >
+        <Share2 className="w-3 h-3 mr-1" />
+        Sync Link
+      </Button>
+      {makePublic && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            const activeMatchId = setupMode === 'invite' ? inviteCode : String(parsedMatchId || '');
+            const specLink = `${window.location.origin}/watch?match=${activeMatchId}`;
+            await navigator.clipboard.writeText(specLink);
+            toast.success("Spectator Link Copied!", { description: "Anyone can watch this live match." });
+          }}
+          className="glass-panel border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 text-[10px] tracking-widest uppercase font-black px-3 py-2 rounded-xl touch-target"
+        >
+          <Eye className="w-3 h-3 mr-1" />
+          Spectator Link
+        </Button>
+      )}
+    </div>
+  )}
+</div>
 
         <BatchTransitionOverlay
           show={showBatchOverlay}
