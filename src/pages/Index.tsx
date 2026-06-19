@@ -238,7 +238,7 @@ const RulesScroll = () => (
 );
 
 // Add this after your imports, before the Index component
-     
+
 
 const BatchTransitionOverlay = ({ show, scores, players, onClose }: any) => {
   if (!show || !scores) return null;
@@ -1755,9 +1755,9 @@ const Index = () => {
         )}
 
         {/* ===== TOP HEADER BAR ===== */}
-        <div className="w-full max-w-[1800px] mb-4 px-2 flex flex-col items-start gap-3 ml-4">
-          <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-left">FILLING GAME</h1>
-          <div className="flex flex-wrap items-center justify-start gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
+        <div className="w-full max-w-[1800px] mb-4 px-2 flex flex-col items-center gap-3">
+          <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
             <span className="font-mono-game text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
               {gameState.players[gameState.currentPlayer].name}'S TURN
             </span>
@@ -1930,12 +1930,12 @@ const Index = () => {
             {/* LEFT COLUMN: Game Log + Target Score - WIDER */}
             <div className="flex flex-col h-full gap-4 w-[420px] flex-shrink-0">
               {/* Game Log */}
-              <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full">
-                <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between">
+              <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full h-[500px] min-h-[400px]">
+                <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between shrink-0">
                   <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
                   <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 </div>
-                <div className="flex-1 overflow-hidden h-full">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden h-full">
                   <GameLog
                     messages={gameState.logMessages}
                     p1Name={gameState.players[0].name}
@@ -1944,9 +1944,8 @@ const Index = () => {
                   />
                 </div>
               </div>
-
               {/* Target Score Display - Same width as Game Log */}
-              <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl w-full">
+              <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl w-full shrink-0">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
                   <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
@@ -1983,6 +1982,7 @@ const Index = () => {
                 )}
               </div>
             </div>
+
 
             {/* CENTER COLUMN: Dartboard - Slight Left Shift */}
             <div className="flex flex-col items-center justify-center ml-[-20px]">

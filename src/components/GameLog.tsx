@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTheme, ThemeType } from '../hooks/useTheme';
 
 interface GameLogProps {
@@ -10,14 +10,22 @@ interface GameLogProps {
 
 const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'avalanche' }) => {
   const colors = useTheme(theme);
+  const logTopRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to top when new messages arrive (since newest are at top)
+  useEffect(() => {
+    if (logTopRef.current && messages.length > 0) {
+      logTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [messages]);
 
   return (
     <div
-      className="bg-black/40 border border-white/10 rounded-2xl p-3 max-h-[300px] min-h-[200px] overflow-y-auto overflow-x-hidden shadow-2xl glass-panel custom-scrollbar"
+      className="h-full w-full bg-black/40 border border-white/10 rounded-2xl p-3 overflow-y-auto overflow-x-hidden shadow-2xl glass-panel custom-scrollbar"
       style={{ borderColor: colors.border }}
     >
       <h4
-        className="text-[9px] font-bold uppercase tracking-[0.2em] mb-3 font-mono-game border-b border-white/10 pb-2 flex items-center justify-between"
+        className="text-[9px] font-bold uppercase tracking-[0.2em] mb-3 font-mono-game border-b border-white/10 pb-2 flex items-center justify-between shrink-0"
         style={{ color: colors.accent }}
       >
         Tactical Log
@@ -29,43 +37,46 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
             <p className="text-[9px] text-white/20 uppercase tracking-widest font-mono-game animate-pulse">Waiting...</p>
           </div>
         ) : (
-          [...messages].reverse().slice(0, 30).map((msg, i) => {
-            const isP1 = msg.includes(`[${p1Name}]`);
-            const isP2 = msg.includes(`[${p2Name}]`);
-            const isSystem = msg.includes("[SYSTEM]");
+          <>
+            <div ref={logTopRef} />
+            {[...messages].reverse().slice(0, 30).map((msg, i) => {
+              const isP1 = msg.includes(`[${p1Name}]`);
+              const isP2 = msg.includes(`[${p2Name}]`);
+              const isSystem = msg.includes("[SYSTEM]");
 
-            let displayMsg = msg;
-            let bgColor = "bg-white/5";
-            let textColor = "text-white/80";
-            let borderColor = "border-white/5";
+              let displayMsg = msg;
+              let bgColor = "bg-white/5";
+              let textColor = "text-white/80";
+              let borderColor = "border-white/5";
 
-            if (isP1) {
-              textColor = "text-primary";
-              borderColor = `border-primary/30`;
-              bgColor = "bg-primary/5";
-              displayMsg = msg.replace(/\[.*?\]:\s*/, "");
-            } else if (isP2) {
-              textColor = "text-red-400";
-              borderColor = "border-red-500/30";
-              bgColor = "bg-red-500/5";
-              displayMsg = msg.replace(/\[.*?\]:\s*/, "");
-            } else if (isSystem) {
-              textColor = "text-white";
-              borderColor = "border-white/20";
-              bgColor = "bg-white/10";
-              displayMsg = msg.replace(/\[SYSTEM\]:\s*/, "");
-            }
+              if (isP1) {
+                textColor = "text-primary";
+                borderColor = `border-primary/30`;
+                bgColor = "bg-primary/5";
+                displayMsg = msg.replace(/\[.*?\]:\s*/, "");
+              } else if (isP2) {
+                textColor = "text-red-400";
+                borderColor = "border-red-500/30";
+                bgColor = "bg-red-500/5";
+                displayMsg = msg.replace(/\[.*?\]:\s*/, "");
+              } else if (isSystem) {
+                textColor = "text-white";
+                borderColor = "border-white/20";
+                bgColor = "bg-white/10";
+                displayMsg = msg.replace(/\[SYSTEM\]:\s*/, "");
+              }
 
-            return (
-              <div
-                key={i}
-                className={`text-[10px] sm:text-[10px] font-medium font-mono-game leading-relaxed border-l-2 pl-3 py-1.5 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
-                style={isP1 ? { borderColor: colors.accent } : undefined}
-              >
-                <span className="opacity-100 group-hover:opacity-100 transition-opacity truncate">{displayMsg}</span>
-              </div>
-            );
-          })
+              return (
+                <div
+                  key={i}
+                  className={`text-[10px] sm:text-[10px] font-medium font-mono-game leading-relaxed border-l-2 pl-3 py-1.5 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
+                  style={isP1 ? { borderColor: colors.accent } : undefined}
+                >
+                  <span className="opacity-100 group-hover:opacity-100 transition-opacity truncate">{displayMsg}</span>
+                </div>
+              );
+            })}
+          </>
         )}
       </div>
     </div>
