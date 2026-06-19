@@ -1,5 +1,4 @@
 import React from 'react';
-import { RING_NUMBERS } from '../game/boardLayout';
 import { useTheme, ThemeType } from '../hooks/useTheme';
 
 interface GameLogProps {
@@ -14,7 +13,7 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
 
   return (
     <div
-      className="bg-black/40 border border-white/10 rounded-2xl p-3 max-h-[300px] min-h-[200px] overflow-y-auto shadow-2xl glass-panel custom-scrollbar"
+      className="bg-black/40 border border-white/10 rounded-2xl p-3 max-h-[300px] min-h-[200px] overflow-y-auto overflow-x-hidden shadow-2xl glass-panel custom-scrollbar"
       style={{ borderColor: colors.border }}
     >
       <h4

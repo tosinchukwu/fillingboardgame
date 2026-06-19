@@ -237,6 +237,54 @@ const RulesScroll = () => (
   </div>
 );
 
+// Add this after your imports, before the Index component
+     
+
+const BatchTransitionOverlay = ({ show, scores, players, onClose }: any) => {
+  if (!show || !scores) return null;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+      <div className="max-w-2xl w-full glass-panel p-6 sm:p-8 md:p-12 rounded-[2rem] sm:rounded-[3rem] border-2 border-primary text-center space-y-6 sm:space-y-8 animate-in zoom-in slide-in-from-bottom-12">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black italic text-primary text-glow-theme leading-tight">BATCH 1 COMPLETE!</h2>
+
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 pt-2 sm:pt-4">
+          <div className="glass-panel p-4 sm:p-6 border-white/5 bg-white/5 rounded-2xl">
+            <div className="text-[9px] sm:text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[0].name}</div>
+            <div className="text-2xl sm:text-3xl font-black text-white italic">{scores[0]} pts</div>
+          </div>
+          <div className="glass-panel p-4 sm:p-6 border-white/5 bg-white/5 rounded-2xl">
+            <div className="text-[9px] sm:text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[1].name}</div>
+            <div className="text-2xl sm:text-3xl font-black text-white italic">{scores[1]} pts</div>
+          </div>
+        </div>
+
+        <div className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
+          <h3 className="text-primary font-black uppercase tracking-[0.2em] text-xs sm:text-sm">Batch 2: The Race to Beat the Bar</h3>
+          <div className="glass-panel p-4 sm:p-6 md:p-8 bg-black/40 rounded-[1.5rem] sm:rounded-[2rem] text-left border-white/10 space-y-3 sm:space-y-4">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm sm:text-base shrink-0">🎯</div>
+              <p className="text-white/90 text-[11px] sm:text-[13px] leading-relaxed">
+                <strong>{players[0].name}</strong> needs to surpass <strong>{scores[1]} pts</strong> ({players[1].name}'s score) to win.
+              </p>
+            </div>
+            <div className="h-[1px] bg-white/5 w-full" />
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold text-sm sm:text-base shrink-0">🏁</div>
+              <p className="text-white/90 text-[11px] sm:text-[13px] leading-relaxed">
+                <strong>{players[1].name}</strong> needs to surpass <strong>{scores[0]} pts</strong> ({players[0].name}'s score) to win.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Button onClick={onClose} className="bg-primary hover:bg-primary/80 text-white font-black px-8 sm:px-12 py-6 sm:py-8 text-lg sm:text-2xl rounded-2xl shadow-xl w-full mt-2 sm:mt-4 transform hover:scale-105 transition-all touch-target">
+          START BATCH 2 RACE 🏹
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 
 const Index = () => {
   const navigate = useNavigate();
@@ -1447,8 +1495,8 @@ const Index = () => {
                     onClick={startSoloGame}
                     disabled={!isConnected}
                     className={`w-full h-14 font-black text-xl rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.2)] transition-all ${isConnected
-                        ? 'bg-primary text-white hover:scale-[1.02] active:scale-[0.98]'
-                        : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                      ? 'bg-primary text-white hover:scale-[1.02] active:scale-[0.98]'
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
                       }`}
                   >
                     {isConnected ? '🚀 Start Game' : '🔌 Connect Wallet to Start'}
@@ -1707,9 +1755,9 @@ const Index = () => {
         )}
 
         {/* ===== TOP HEADER BAR ===== */}
-        <div className="w-full max-w-[1700px] mb-4 px-2 flex flex-col items-center gap-3">
-          <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
-          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
+        <div className="w-full max-w-[1800px] mb-4 px-2 flex flex-col items-start gap-3 ml-4">
+          <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-left">FILLING GAME</h1>
+          <div className="flex flex-wrap items-center justify-start gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
             <span className="font-mono-game text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
               {gameState.players[gameState.currentPlayer].name}'S TURN
             </span>
@@ -1879,26 +1927,26 @@ const Index = () => {
           {/* === ROW 2: PC 3-Column Layout (ONLY on desktop) === */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
 
-            {/* LEFT COLUMN: Game Log + Target Score */}
-<div className="flex flex-col h-full gap-4">
-  {/* Game Log - Narrower width */}
-  <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-[280px]">
-    <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between">
-      <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
-      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-    </div>
-    <div className="flex-1 overflow-hidden h-full">
-      <GameLog
-        messages={gameState.logMessages}
-        p1Name={gameState.players[0].name}
-        p2Name={gameState.players[1].name}
-        theme={theme}
-      />
-    </div>
-  </div>
+            {/* LEFT COLUMN: Game Log + Target Score - WIDER */}
+            <div className="flex flex-col h-full gap-4 w-[420px] flex-shrink-0">
+              {/* Game Log */}
+              <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full">
+                <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between">
+                  <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                </div>
+                <div className="flex-1 overflow-hidden h-full">
+                  <GameLog
+                    messages={gameState.logMessages}
+                    p1Name={gameState.players[0].name}
+                    p2Name={gameState.players[1].name}
+                    theme={theme}
+                  />
+                </div>
+              </div>
 
-              {/* Target Score Display */}
-              <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl">
+              {/* Target Score Display - Same width as Game Log */}
+              <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl w-full">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
                   <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
@@ -1936,8 +1984,8 @@ const Index = () => {
               </div>
             </div>
 
-            {/* CENTER COLUMN: Dartboard */}
-            <div className="flex flex-col items-center justify-center">
+            {/* CENTER COLUMN: Dartboard - Slight Left Shift */}
+            <div className="flex flex-col items-center justify-center ml-[-20px]">
               <Dartboard
                 gameState={gameState}
                 onHitNumber={handleHitNumber}
@@ -1948,7 +1996,6 @@ const Index = () => {
               />
               {!gameState.isVsCPU && (
                 <div className="flex flex-wrap justify-center gap-2 mt-4">
-
                   {makePublic && (
                     <Button
                       variant="outline"
@@ -1969,8 +2016,8 @@ const Index = () => {
               )}
             </div>
 
-            {/* RIGHT COLUMN: Scoring Table */}
-            <div className="flex flex-col h-full">
+            {/* RIGHT COLUMN: Scoring Table - WIDER */}
+            <div className="flex flex-col h-full flex-1">
               <div className="flex-1 min-h-0 overflow-hidden">
                 {rightColTab === 'stats' ? (
                   <MasterScoringTable gameState={gameState} theme={theme} />
@@ -1996,64 +2043,19 @@ const Index = () => {
               </div>
             </div>
           </div>
+
+          <BatchTransitionOverlay
+            show={showBatchOverlay}
+            scores={gameState.batch1Scores}
+            players={gameState.players}
+            onClose={() => setShowBatchOverlay(false)}
+          />
+
         </div>
-
-
-        <BatchTransitionOverlay
-          show={showBatchOverlay}
-          scores={gameState.batch1Scores}
-          players={gameState.players}
-          onClose={() => setShowBatchOverlay(false)}
-        />
-
       </div>
     </>
   );
 };
 
-const BatchTransitionOverlay = ({ show, scores, players, onClose }: any) => {
-  if (!show || !scores) return null;
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="max-w-2xl w-full glass-panel p-6 sm:p-8 md:p-12 rounded-[2rem] sm:rounded-[3rem] border-2 border-primary text-center space-y-6 sm:space-y-8 animate-in zoom-in slide-in-from-bottom-12">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black italic text-primary text-glow-theme leading-tight">BATCH 1 COMPLETE!</h2>
-
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 pt-2 sm:pt-4">
-          <div className="glass-panel p-4 sm:p-6 border-white/5 bg-white/5 rounded-2xl">
-            <div className="text-[9px] sm:text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[0].name}</div>
-            <div className="text-2xl sm:text-3xl font-black text-white italic">{scores[0]} pts</div>
-          </div>
-          <div className="glass-panel p-4 sm:p-6 border-white/5 bg-white/5 rounded-2xl">
-            <div className="text-[9px] sm:text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[1].name}</div>
-            <div className="text-2xl sm:text-3xl font-black text-white italic">{scores[1]} pts</div>
-          </div>
-        </div>
-
-        <div className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
-          <h3 className="text-primary font-black uppercase tracking-[0.2em] text-xs sm:text-sm">Batch 2: The Race to Beat the Bar</h3>
-          <div className="glass-panel p-4 sm:p-6 md:p-8 bg-black/40 rounded-[1.5rem] sm:rounded-[2rem] text-left border-white/10 space-y-3 sm:space-y-4">
-            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm sm:text-base shrink-0">🎯</div>
-              <p className="text-white/90 text-[11px] sm:text-[13px] leading-relaxed">
-                <strong>{players[0].name}</strong> needs to surpass <strong>{scores[1]} pts</strong> ({players[1].name}'s score) to win.
-              </p>
-            </div>
-            <div className="h-[1px] bg-white/5 w-full" />
-            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold text-sm sm:text-base shrink-0">🏁</div>
-              <p className="text-white/90 text-[11px] sm:text-[13px] leading-relaxed">
-                <strong>{players[1].name}</strong> needs to surpass <strong>{scores[0]} pts</strong> ({players[0].name}'s score) to win.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <Button onClick={onClose} className="bg-primary hover:bg-primary/80 text-white font-black px-8 sm:px-12 py-6 sm:py-8 text-lg sm:text-2xl rounded-2xl shadow-xl w-full mt-2 sm:mt-4 transform hover:scale-105 transition-all touch-target">
-          START BATCH 2 RACE 🏹
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 export default Index;
