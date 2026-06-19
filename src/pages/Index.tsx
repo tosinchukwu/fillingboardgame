@@ -273,6 +273,7 @@ const Index = () => {
   const [rightColTab, setRightColTab] = useState<'stats' | 'history'>('stats');
   const seenGuestsRef = useRef<Set<string>>(new Set());
   const [isPaused, setIsPaused] = useState(false);
+  const [batch2BackgroundUrl, setBatch2BackgroundUrl] = useState<string>('/backgrounds/dart-arena.jpg');
 
   const handleCustomTrackAdd = (track: CustomTrack) => {
     setCustomTracks(prev => [...prev, track]);
@@ -306,6 +307,13 @@ const Index = () => {
     };
   }, [theme]);
 
+  // ===== DETECT BATCH CHANGE AND ROTATE BACKGROUND =====
+  useEffect(() => {
+    if (gameState && gameState.batch === 2 && gameState.batch1Scores !== null) {
+      // Batch 2 just started - change to custom background
+      rotateBackground();
+    }
+  }, [gameState?.batch, gameState?.batch1Scores]);
 
   const { address, isConnected, chain } = useAccount();
   const activeChainId = chain?.id || SUPPORTED_CHAINS[0].id;
@@ -683,6 +691,18 @@ const Index = () => {
     setIsLobbyJoined(false);
     setIsHost(false);
     seenGuestsRef.current.clear();
+  };
+
+  // ===== BACKGROUND ROTATION ON BATCH CHANGE =====
+  const rotateBackground = () => {
+    // ✅ Change to custom background when Batch 2 starts
+    // Replace 'my-batch2-bg.jpg' with your actual image name
+    setBackground('custom');
+    setCustomWallpaperUrl('/backgrounds/my-batch2-bg.jpg');
+    toast.info(`🎯 Background changed to Batch 2 Arena!`, {
+      duration: 2500,
+      icon: '🎯',
+    });
   };
 
   // ===== PAUSE / RESUME / EXIT CONTROLS =====
