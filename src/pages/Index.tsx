@@ -1816,7 +1816,7 @@ const Index = () => {
           {/* === ROW 1: Mobile Collapsible Panels (ONLY on mobile) === */}
           <div className="block lg:hidden w-full grid grid-cols-1 gap-4">
 
-            {/* Game Log Panel */}
+            {/* Game Log Panel - Collapsible with fixed height and scroll */}
             <div className="w-full max-w-md mx-auto">
               <button
                 onClick={() => setIsLogExpanded(!isLogExpanded)}
@@ -1837,17 +1837,26 @@ const Index = () => {
               </button>
               {isLogExpanded && (
                 <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
-                  <GameLog
-                    messages={gameState.logMessages}
-                    p1Name={gameState.players[0].name}
-                    p2Name={gameState.players[1].name}
-                    theme={theme}
-                  />
+                  <div className="glass-panel rounded-3xl border-white/10 overflow-hidden shadow-2xl w-full h-[300px] flex flex-col">
+                    <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between shrink-0">
+                      <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    </div>
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                      <GameLog
+                        messages={gameState.logMessages}
+                        p1Name={gameState.players[0].name}
+                        p2Name={gameState.players[1].name}
+                        theme={theme}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Stats Panel */}
+
+            {/* Stats Panel - Collapsible with fixed height and scroll */}
             <div className="w-full">
               <button
                 onClick={() => setIsScoresExpanded(!isScoresExpanded)}
@@ -1868,50 +1877,59 @@ const Index = () => {
               </button>
               {isScoresExpanded && (
                 <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
-                  <div className="glass-panel rounded-3xl p-4 border-white/10 shadow-2xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
-                      <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
-                        Batch {gameState.batch}
+                  <div className="glass-panel rounded-3xl border-white/10 overflow-hidden shadow-2xl w-full h-[450px] flex flex-col">
+                    <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between shrink-0">
+                      <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Match Stats</h3>
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    </div>
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-2">
+                      <div className="glass-panel rounded-3xl p-4 border-white/10 shadow-2xl">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
+                          <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
+                            Batch {gameState.batch}
+                          </div>
+                        </div>
+                        {gameState.batch === 2 && gameState.batch1Scores && (
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                              <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
+                              <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
+                            </div>
+                            <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                              <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
+                              <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
+                            </div>
+                          </div>
+                        )}
+                        {gameState.batch === 1 && (
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-white tracking-tighter italic">221.5</span>
+                            <span className="text-[8px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
+                          </div>
+                        )}
+                        {gameState.batch === 2 && gameState.batch1Scores && (
+                          <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
+                            <div className="text-[8px] font-medium leading-tight text-primary/80">
+                              <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win
+                            </div>
+                            <div className="text-[8px] font-medium leading-tight text-secondary/80">
+                              <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-3">
+                        <MasterScoringTable gameState={gameState} theme={theme} />
                       </div>
                     </div>
-                    {gameState.batch === 2 && gameState.batch1Scores && (
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                          <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
-                          <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                          <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
-                          <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
-                        </div>
-                      </div>
-                    )}
-                    {gameState.batch === 1 && (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-white tracking-tighter italic">221.5</span>
-                        <span className="text-[8px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
-                      </div>
-                    )}
-                    {gameState.batch === 2 && gameState.batch1Scores && (
-                      <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
-                        <div className="text-[8px] font-medium leading-tight text-primary/80">
-                          <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win
-                        </div>
-                        <div className="text-[8px] font-medium leading-tight text-secondary/80">
-                          <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <MasterScoringTable gameState={gameState} theme={theme} />
                   </div>
                 </div>
               )}
             </div>
 
-            {/* 🎯 DARTBOARD - MOBILE (FIXED) */}
+
+            {/* 🎯 DARTBOARD - MOBILE */}
             <div className="w-full flex flex-col items-center justify-center py-2">
               <div className="w-full max-w-[350px] mx-auto">
                 <Dartboard
@@ -1924,6 +1942,7 @@ const Index = () => {
                 />
               </div>
             </div>
+
 
             {/* Bottom Buttons on Mobile */}
             {!gameState.isVsCPU && (
