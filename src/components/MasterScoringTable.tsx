@@ -97,30 +97,31 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState, them
             className="glass-panel rounded-3xl overflow-hidden border-white/10 shadow-2xl flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-700"
             style={{ borderColor: colors.border }}
         >
-            <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
-                <h3 className="text-sm font-black tracking-[0.2em] uppercase text-white flex items-center gap-3">
+            <div className="bg-white/5 p-3 sm:p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-[10px] sm:text-sm font-black tracking-[0.2em] uppercase text-white flex items-center gap-2 sm:gap-3">
                     <span
-                        className="w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px_rgba(232,65,66,0.6)]"
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse"
                         style={{ backgroundColor: colors.accent, boxShadow: `0 0 8px ${colors.glow}` }}
                     />
-                    MASTER SCORING TABLE (Number-Based Format)
+                    MASTER SCORING TABLE
                 </h3>
-                <span className="text-[10px] font-mono-game text-white/30 uppercase tracking-widest hidden sm:inline">Strategy Logic Applied</span>
+                <span className="text-[8px] sm:text-[10px] font-mono-game text-white/30 uppercase tracking-widest hidden sm:inline">Strategy Logic Applied</span>
             </div>
 
-            <div className="flex-1 overflow-auto custom-scrollbar">
-                <div className="min-w-[600px] sm:min-w-0">
+            {/* ✅ FIXED: Scroll wrapper with horizontal scroll on mobile */}
+            <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
+                <div className="min-w-[700px] lg:min-w-0">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-black/40 text-[9px] uppercase tracking-widest text-white/40 border-b border-white/10">
-                                <th className="py-3 px-3 font-black">Dart No</th>
-                                <th className="py-3 px-3 font-black">{gameState.players[0].name.toUpperCase()} (Hit Position)</th>
-                                <th className="py-3 px-3 font-black">{gameState.players[1].name.toUpperCase()} (Hit Position)</th>
-                                <th className="py-3 px-3 font-black text-center">Filler +2 (Who Earned)</th>
-                                <th className="py-3 px-3 font-black text-center">Top Filler +7</th>
-                                <th className="py-3 px-3 font-black text-center">Fill Up +10</th>
-                                <th className="py-3 px-3 font-black text-center">{gameState.players[0].name.toUpperCase()} Total</th>
-                                <th className="py-3 px-3 font-black text-center">{gameState.players[1].name.toUpperCase()} Total</th>
+                            <tr className="bg-black/40 text-[8px] sm:text-[9px] uppercase tracking-widest text-white/40 border-b border-white/10">
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black">Dart No</th>
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black">{gameState.players[0].name.toUpperCase()} (Hit)</th>
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black">{gameState.players[1].name.toUpperCase()} (Hit)</th>
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black text-center">Filler +2</th>
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black text-center">Top Filler +7</th>
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black text-center">Fill Up +10</th>
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black text-center">{gameState.players[0].name.toUpperCase()} Total</th>
+                                <th className="py-2 sm:py-3 px-2 sm:px-3 font-black text-center">{gameState.players[1].name.toUpperCase()} Total</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -130,24 +131,24 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState, them
                 </div>
             </div>
 
-            <div className="bg-black/40 p-4 border-t border-white/10 flex justify-between items-center font-mono-game">
-                <div className="flex flex-col gap-1">
-                    <span className="text-[9px] text-white/30 uppercase tracking-widest">Board Status</span>
+            <div className="bg-black/40 p-3 sm:p-4 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 font-mono-game">
+                <div className="flex flex-col items-center sm:items-start gap-1">
+                    <span className="text-[8px] sm:text-[9px] text-white/30 uppercase tracking-widest">Board Status</span>
                     <span
-                        className="text-[11px] font-bold uppercase tracking-widest"
+                        className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest"
                         style={{ color: colors.accent }}
                     >
-                        {gameState.closedNumbers.size} / {TOTAL_NUMBERS} Fully Closed
+                        {gameState.closedNumbers.size} / {TOTAL_NUMBERS} Closed
                     </span>
                 </div>
-                <div className="flex gap-6">
-                    <div className="text-right">
-                        <span className="block text-[8px] text-white/40 uppercase">Total {gameState.players[0].name}</span>
-                        <span className="text-xl font-black text-white">{gameState.players[0].totalScore}</span>
+                <div className="flex gap-4 sm:gap-6">
+                    <div className="text-center sm:text-right">
+                        <span className="block text-[7px] sm:text-[8px] text-white/40 uppercase">Total {gameState.players[0].name}</span>
+                        <span className="text-lg sm:text-xl font-black text-white">{gameState.players[0].totalScore}</span>
                     </div>
-                    <div className="text-right">
-                        <span className="block text-[8px] text-white/40 uppercase">Total {gameState.players[1].name}</span>
-                        <span className="text-xl font-black text-white">{gameState.players[1].totalScore}</span>
+                    <div className="text-center sm:text-right">
+                        <span className="block text-[7px] sm:text-[8px] text-white/40 uppercase">Total {gameState.players[1].name}</span>
+                        <span className="text-lg sm:text-xl font-black text-white">{gameState.players[1].totalScore}</span>
                     </div>
                 </div>
             </div>

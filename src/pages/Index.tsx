@@ -274,6 +274,9 @@ const Index = () => {
   const seenGuestsRef = useRef<Set<string>>(new Set());
   const [isPaused, setIsPaused] = useState(false);
   const [batch2BackgroundUrl, setBatch2BackgroundUrl] = useState<string>('/backgrounds/dart-arena.jpg');
+  // Mobile collapsible panels
+  const [isLogExpanded, setIsLogExpanded] = useState(false);
+  const [isScoresExpanded, setIsScoresExpanded] = useState(false);
 
   const handleCustomTrackAdd = (track: CustomTrack) => {
     setCustomTracks(prev => [...prev, track]);
@@ -298,9 +301,8 @@ const Index = () => {
     };
   }, []);
 
-  // ✅ ADD THIS RIGHT HERE - Theme Effect for Global Styling
+  // ✅ Theme Effect for Global Styling
   useEffect(() => {
-    // Apply theme class to body for global styling
     document.body.className = `theme-${theme}`;
     return () => {
       document.body.className = '';
@@ -310,7 +312,6 @@ const Index = () => {
   // ===== DETECT BATCH CHANGE AND ROTATE BACKGROUND =====
   useEffect(() => {
     if (gameState && gameState.batch === 2 && gameState.batch1Scores !== null) {
-      // Batch 2 just started - change to custom background
       rotateBackground();
     }
   }, [gameState?.batch, gameState?.batch1Scores]);
@@ -325,7 +326,6 @@ const Index = () => {
   const { disconnect } = useDisconnect();
   const [supabaseConnected, setSupabaseConnected] = useState(false);
 
-  // Safe Match ID parsing
   const parsedMatchId = (() => {
     try {
       return matchId && !isNaN(Number(matchId.trim())) ? BigInt(matchId.trim()) : undefined;
@@ -334,7 +334,6 @@ const Index = () => {
     }
   })();
 
-  // Real-time Match Data
   const { data: contractMatch, refetch: refetchMatch, isLoading: isLoadingMatch, error: matchError } = useReadContract({
     address: activeContractAddress as `0x${string}`,
     abi: CONTRACT_ABI,
@@ -352,7 +351,6 @@ const Index = () => {
     }
   }, [matchError]);
 
-  // Game State Sync from Hash
   useEffect(() => {
     const handleHashSync = () => {
       const hash = window.location.hash;
@@ -361,12 +359,9 @@ const Index = () => {
           const encodedData = hash.substring(6);
           const decodedData = decodeURIComponent(atob(encodedData));
           const state = JSON.parse(decodedData);
-
-          // Rehydrate Set for closedNumbers
           if (state.closedNumbers) {
             state.closedNumbers = new Set(state.closedNumbers);
           }
-
           setGameState(state);
           setGameStarted(true);
           toast.success("Game state synchronized!");
@@ -382,25 +377,21 @@ const Index = () => {
         setIsHost(false);
         setIsLobbyJoined(true);
         toast.info("Joining invite match...");
-        // Keep hash so we know it's an invite link until game starts
       }
     };
 
     window.addEventListener('hashchange', handleHashSync);
-    handleHashSync(); // Check on mount
+    handleHashSync();
     return () => window.removeEventListener('hashchange', handleHashSync);
   }, []);
 
-  // Verify match existence (ID should be non-zero)
   const isMatchValid = contractMatch && (contractMatch as any).id !== 0n;
 
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const prevBatchRef = useRef<number>(1);
 
-  // Manual start only
   const startGame = () => {
     if (!contractMatch) return;
-
     const m = contractMatch as any;
     setIsVsCPU(false);
     const initialState = createInitialGameState(
@@ -412,22 +403,17 @@ const Index = () => {
     );
     setGameState(initialState);
     setGameStarted(true);
-
-    // Initialize Supabase row
     broadcastGameState(initialState);
   };
 
-  // Unified Match ID for all sync modes
   const activeSyncId = (() => {
     if (setupMode === 'invite') return inviteCode;
     return String(parsedMatchId || '');
   })();
 
-  // Game State Sync from Supabase
   useEffect(() => {
     if (!activeSyncId || (setupMode === 'solo' && !matchId)) return;
 
-    // 1. Fetch current state if it exists
     const fetchCurrentState = async () => {
       try {
         const { data, error } = await supabase
@@ -447,7 +433,6 @@ const Index = () => {
             setGameState(newState);
             setGameStarted(true);
           }
-
           if (data.lobby_host && !isHost) {
             try {
               const host = typeof data.lobby_host === 'string' ? JSON.parse(data.lobby_host) : data.lobby_host;
@@ -470,7 +455,6 @@ const Index = () => {
 
     fetchCurrentState();
 
-    // 2. Subscribe to new changes
     const channel = supabase
       .channel(`match-${activeSyncId}`)
       .on(
@@ -480,23 +464,18 @@ const Index = () => {
           const row = payload.new as any;
           const newState = row.game_state;
           if (newState) {
-            // Rehydrate Set for closedNumbers
             if (newState.closedNumbers) {
               newState.closedNumbers = new Set(newState.closedNumbers);
             }
             if (!newState.logMessages) {
               newState.logMessages = [];
             }
-
-            // Hit Detection for Animations
             setGameState(prev => {
               if (prev && newState.logMessages.length > prev.logMessages.length) {
                 const latestMsg = newState.logMessages[newState.logMessages.length - 1];
-                // Check if it's a remote player
                 if (newState.currentPlayer === 1 && (latestMsg.includes('Hit') || latestMsg.includes('landed'))) {
                   const numMatch = latestMsg.match(/#?(\d+)/);
                   const targetNum = numMatch ? parseInt(numMatch[1]) : 14;
-
                   playSFX('hit');
                   window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', {
                     detail: { target: targetNum }
@@ -507,8 +486,6 @@ const Index = () => {
             });
             setGameStarted(true);
           }
-
-          // Also sync lobby names if not already set (especially for guest joining)
           if (row.lobby_host && !isHost) {
             try {
               const host = typeof row.lobby_host === 'string' ? JSON.parse(row.lobby_host) : row.lobby_host;
@@ -540,22 +517,18 @@ const Index = () => {
 
   const broadcastGameState = useCallback(async (state: GameState) => {
     if (!activeSyncId || (setupMode !== 'multi' && setupMode !== 'invite') || isVsCPU) return;
-
-    // If game just ended in an invite match, release the featured spectator slot
     if (state.gameOver && setupMode === 'invite' && inviteCode) {
       try {
         await supabase.from('matches').update({ status: 'finished' }).eq('match_id', inviteCode);
       } catch { /* non-critical */ }
     }
-
     try {
       const serializedState = {
         ...state,
-        theme, // Sync the current theme
+        theme,
         latestDart: state.latestDart || null,
         closedNumbers: Array.from(state.closedNumbers)
       };
-
       let error;
       if (setupMode === 'multi') {
         const res = await supabase
@@ -577,7 +550,6 @@ const Index = () => {
           .eq('match_id', activeSyncId);
         error = res.error;
       }
-
       if (error) {
         console.error("Broadcast error:", error);
       }
@@ -586,13 +558,9 @@ const Index = () => {
     }
   }, [setupMode, activeSyncId, isVsCPU, theme]);
 
-  // Heartbeat to keep live match active in spectator list
   useEffect(() => {
     if (!gameStarted || !isHost || !activeSyncId || setupMode === 'solo') return;
-
     const interval = setInterval(async () => {
-      // Just "touch" the row to update updated_at. 
-      // Using 'status' as a safe field to overwrite with same value.
       try {
         await supabase
           .from('matches')
@@ -604,19 +572,15 @@ const Index = () => {
       } catch (e) {
         console.error("Heartbeat failed:", e);
       }
-    }, 45000); // Every 45 seconds
-
+    }, 45000);
     return () => {
       clearInterval(interval);
-      // Optional: on unmount (refresh/leave), try to mark as inactive if match is over or host left
-      // Note: this might not always complete on tab close, but helps on navigation
       if (isHost && activeSyncId) {
         supabase.from('matches').update({ status: 'finished' }).eq('match_id', activeSyncId).then();
       }
     };
   }, [gameStarted, isHost, setupMode, activeSyncId]);
 
-  // Audio Logic
   useEffect(() => {
     const unlockAudio = () => {
       if (musicRef.current && musicEnabled && gameStarted && musicRef.current.paused) {
@@ -630,7 +594,6 @@ const Index = () => {
 
   useEffect(() => {
     if (musicEnabled && gameStarted) {
-      // Resolve the audio source — custom tracks use blob URLs, built-ins use file paths
       let src: string | undefined;
       if (selectedMusic.startsWith('custom_')) {
         const idx = parseInt(selectedMusic.split('_')[1], 10);
@@ -638,9 +601,7 @@ const Index = () => {
       } else {
         src = (AUDIO_ASSETS.music as any)[selectedMusic];
       }
-
-      if (!src) return; // track was deleted or not found
-
+      if (!src) return;
       if (!musicRef.current) {
         musicRef.current = new Audio(src);
         musicRef.current.loop = true;
@@ -691,12 +652,10 @@ const Index = () => {
     setIsLobbyJoined(false);
     setIsHost(false);
     seenGuestsRef.current.clear();
-    // ✅ Reset background to default sky when game resets
     setBackground('sky');
     setCustomWallpaperUrl(undefined);
   };
 
-  // ===== BACKGROUND ROTATION ON BATCH CHANGE =====
   const rotateBackground = () => {
     setBackground('custom');
     setCustomWallpaperUrl(batch2BackgroundUrl);
@@ -706,7 +665,6 @@ const Index = () => {
     });
   };
 
-  // ===== PAUSE / RESUME / EXIT CONTROLS =====
   const togglePause = () => {
     setIsPaused(!isPaused);
     if (!isPaused) {
@@ -731,11 +689,8 @@ const Index = () => {
 
   const handleHitNumber = useCallback((num: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
-
     const result = hitNumber(gameState, num);
     const updatedState = result.state;
-
-    // Apply visual sync state
     updatedState.theme = theme;
     if (dartPos) {
       updatedState.latestDart = { ...dartPos, playerIdx: gameState.currentPlayer };
@@ -743,10 +698,8 @@ const Index = () => {
     if (updatedState.gameOver) {
       updatedState.latestDart = null;
     }
-
     if (updatedState.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
     prevBatchRef.current = updatedState.batch;
-
     setGameState(updatedState);
     setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: num, type: 'number' }]);
     broadcastGameState(updatedState);
@@ -754,12 +707,9 @@ const Index = () => {
 
   const handleHitRing = useCallback((ringIdx: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
-
     const nums = RING_NUMBERS[ringIdx];
     const result = hitRing(gameState, ringIdx, nums);
     const updatedState = result.state;
-
-    // Apply visual sync state
     updatedState.theme = theme;
     if (dartPos) {
       updatedState.latestDart = { ...dartPos, playerIdx: gameState.currentPlayer };
@@ -767,10 +717,8 @@ const Index = () => {
     if (updatedState.gameOver) {
       updatedState.latestDart = null;
     }
-
     if (updatedState.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
     prevBatchRef.current = updatedState.batch;
-
     setGameState(updatedState);
     setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: ringIdx, type: 'ring' }]);
     broadcastGameState(updatedState);
@@ -781,7 +729,6 @@ const Index = () => {
   const cpuAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // CPU Turn Logic
     if (
       gameStarted &&
       gameState &&
@@ -792,22 +739,14 @@ const Index = () => {
       !showBatchOverlay &&
       !isDartFlying
     ) {
-      // 6s delay for the first dart of the turn, 2s for others
       const delay = gameState.dartsRemaining === 3 ? 6000 : 2000;
-
       cpuTurnTimeoutRef.current = setTimeout(() => {
-        // Use the current state to compute the move
         const move = computeCPUMove(gameState);
-
-        // Trigger visual throw aimed at CPU's chosen target
         const visualTarget = move.type === 'number' ? move.index : (RING_NUMBERS[move.index]?.[0] ?? 1);
         window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', { detail: { target: visualTarget, playerIdx: 1 } }));
-
-        // Wait for throw animation (1s) before processing the logic hit
         cpuAnimationTimeoutRef.current = setTimeout(() => {
           setGameState(prevState => {
             if (!prevState || prevState.currentPlayer !== 1 || prevState.gameOver) return prevState;
-
             let updated: GameState;
             if (move.type === 'number') {
               const result = hitNumber(prevState, move.index);
@@ -816,40 +755,32 @@ const Index = () => {
               const result = hitRing(prevState, move.index, RING_NUMBERS[move.index]);
               updated = result.state;
             }
-
             if (updated.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
             prevBatchRef.current = updated.batch;
-
             setHitHistory(prev => [...prev, { player: 1, value: move.index, type: move.type }]);
             return updated;
           });
         }, 1000);
       }, delay);
     }
-
     return () => {
       if (cpuTurnTimeoutRef.current) clearTimeout(cpuTurnTimeoutRef.current);
       if (cpuAnimationTimeoutRef.current) clearTimeout(cpuAnimationTimeoutRef.current);
     };
   }, [gameStarted, gameState, showBatchOverlay, isDartFlying]);
 
-  // ===== Per-turn 10s countdown timer =====
   const TURN_SECONDS = 30;
   const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
 
-  // Determine if timer should be active for the current viewer
-  // Determine if timer should be active for the current viewer
   const timerActive = (() => {
     if (!gameStarted || !gameState || gameState.gameOver) return false;
     if (showBatchOverlay || isDartFlying) return false;
     if (gameState.dartsRemaining <= 0) return false;
-    // Skip timer for CPU turns (CPU has its own timing)
     if (gameState.isVsCPU && gameState.currentPlayer === 1) return false;
-    if (isPaused) return false; // ✅ Pause timer when paused
+    if (isPaused) return false;
     return true;
   })();
 
-  // Reset countdown whenever the active turn changes
   useEffect(() => {
     if (!timerActive) {
       setTurnSeconds(null);
@@ -862,7 +793,6 @@ const Index = () => {
     gameState?.dartsRemaining,
   ]);
 
-  // Tick once per second
   useEffect(() => {
     if (!timerActive || turnSeconds === null) return;
     if (turnSeconds <= 0) return;
@@ -870,7 +800,6 @@ const Index = () => {
     return () => clearTimeout(id);
   }, [turnSeconds, timerActive]);
 
-  // Handle timeout — only the local active player passes the turn (avoids double-fire in multiplayer)
   useEffect(() => {
     if (!timerActive || turnSeconds !== 0) return;
     if (!gameState) return;
@@ -884,20 +813,12 @@ const Index = () => {
   const canIThrow = (() => {
     if (!gameState || gameState.gameOver || gameState.dartsRemaining <= 0 || showBatchOverlay) return false;
     if (isDartFlying) return false;
-
-    // Solo vs CPU: Player 0 (human) can throw when it's their turn
     if (gameState.isVsCPU) {
       return gameState.currentPlayer === 0;
     }
-
-    // Multiplayer (Invite or Private): 
-    // Compare current player's address with the connected wallet address.
     const myAddr = address?.toLowerCase();
     const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
-
-    // Safety: if address is missing, we can't throw
     if (!myAddr || !activePlayerAddr) return false;
-
     return myAddr === activePlayerAddr;
   })();
 
@@ -908,17 +829,12 @@ const Index = () => {
     }
     const newCode = Array.from(crypto.getRandomValues(new Uint8Array(4)))
       .map(b => b.toString(16).padStart(2, '0')).join('');
-
     setInviteCode(newCode);
     setIsHost(true);
     setIsLobbyJoined(true);
     setP1Address(address);
-
-    // If makePublic is checked, mark as featured so it shows in spectator lobby
     const isFeatured = makePublic;
     const matchType = makePublic ? 'official' : 'casual';
-
-    // Write host lobby row to Supabase so the subscription channel is ready
     try {
       const { error } = await supabase.from('matches').upsert({
         match_id: newCode,
@@ -929,10 +845,8 @@ const Index = () => {
         is_featured: isFeatured,
         status: 'active',
       }, { onConflict: 'match_id' });
-
       if (error) {
         console.error('Failed to create lobby row:', error);
-        // Check if it's a CORS authorization error
         if (error.message?.includes('has not been authorized')) {
           toast.error("CORS Error: Your preview URL needs authorization in Supabase settings. See documentation for fix.");
         } else {
@@ -942,7 +856,6 @@ const Index = () => {
       }
     } catch (e: any) {
       console.error('Failed to create lobby row:', e);
-      // Check if it's a CORS error from the exception
       if (e?.message?.includes('has not been authorized') || e?.message?.includes('CORS')) {
         toast.error("CORS Error: Your preview URL needs authorization in Supabase settings. See SUPABASE_CORS_FIX.md for fix.");
       } else {
@@ -950,7 +863,6 @@ const Index = () => {
       }
       return;
     }
-
     const inviteLink = `${window.location.origin}${window.location.pathname}#invite=${newCode}`;
     await navigator.clipboard.writeText(inviteLink);
     const typeLabel = isFeatured ? "OFFICIAL" : "CASUAL";
@@ -965,17 +877,14 @@ const Index = () => {
       return;
     }
     setP2Address(address);
-    // Write guest presence directly to Supabase so Host detects it
     try {
       const { error } = await supabase.from('matches')
         .update({
           lobby_guest: { name: p2Name, address },
         })
         .eq('match_id', inviteCode);
-
       if (error) {
         console.error('Failed to write guest presence:', error);
-        // Check if it's a CORS authorization error
         if (error.message?.includes('has not been authorized')) {
           toast.error("CORS Error: Your preview URL needs authorization in Supabase settings.");
         } else {
@@ -994,10 +903,8 @@ const Index = () => {
     }
   };
 
-  // Host: watch Supabase for guest joining
   useEffect(() => {
     if (!isHost || !inviteCode) return;
-
     const channel = supabase
       .channel(`invite-lobby-${inviteCode}`)
       .on(
@@ -1023,11 +930,9 @@ const Index = () => {
               console.error('Failed to parse guest info:', e);
             }
           }
-          // If host broadcasts a game_state (game started), guest sync handles the rest
         }
       )
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [isHost, inviteCode]);
 
@@ -1036,7 +941,6 @@ const Index = () => {
       toast.error("Waiting for opponent to connect...");
       return;
     }
-
     setIsVsCPU(false);
     const initialState = createInitialGameState(
       p1Name,
@@ -1047,11 +951,8 @@ const Index = () => {
     );
     setGameState(initialState);
     setGameStarted(true);
-
-    // Broadcast the official start
     broadcastGameState(initialState);
   };
-
 
   const getLauncherText = () => {
     if (!gameState) return '';
@@ -1059,23 +960,20 @@ const Index = () => {
     if (showBatchOverlay) return 'Next Batch...';
     if (gameState.dartsRemaining <= 0) return 'Turn Ending...';
     if (isPaused) return '⏸️ Game Paused';
-
     if (gameState.isVsCPU && gameState.currentPlayer === 1) {
       return 'CPU Throwing...';
     }
-
     if (canIThrow) return 'Launch Dart';
     return (gameState.isVsCPU && gameState.currentPlayer === 0) || (address && gameState.players[gameState.currentPlayer].address.toLowerCase() === address.toLowerCase())
       ? 'Launch Dart'
       : 'Wait Turn';
   };
 
-  // If this function doesn't exist, add it. If it does, update it.
   const isLaunchDisabled = () => {
     if (!gameState || gameState.gameOver) return true;
     if (showBatchOverlay) return true;
     if (gameState.dartsRemaining <= 0) return true;
-    if (isPaused) return true; // ✅ Disable launch when paused
+    if (isPaused) return true;
     if (gameState.isVsCPU && gameState.currentPlayer === 1) return true;
     if (!canIThrow) return true;
     return false;
@@ -1094,7 +992,6 @@ const Index = () => {
       text: 'Join me for a strategic game of Filling Game Darts!',
       url: window.location.origin
     };
-
     try {
       if (navigator.share) {
         await navigator.share(shareData);
@@ -1111,17 +1008,13 @@ const Index = () => {
 
   const shareSyncLink = async () => {
     if (!gameState) return;
-
     try {
-      // Serialize state (Set needs to be array)
       const serializedState = {
         ...gameState,
         closedNumbers: Array.from(gameState.closedNumbers)
       };
-
       const encoded = btoa(encodeURIComponent(JSON.stringify(serializedState)));
       const syncUrl = `${window.location.origin}${window.location.pathname}#sync=${encoded}`;
-
       await navigator.clipboard.writeText(syncUrl);
       toast.success("Sync Share Link Copied!", {
         description: "Send this to the other player to sync your turns."
@@ -1143,22 +1036,18 @@ const Index = () => {
     }
   }, [isTxSuccess, hash]);
 
-  // Verification polling effect using useReadContract
   const { data: verificationGameCount, refetch: refetchGameCount } = useReadContract({
     address: activeVerifierAddress as `0x${string}`,
     abi: VERIFIER_CONTRACT_ABI,
     functionName: 'getGameCount',
     query: {
-      enabled: false, // Manual polling
+      enabled: false,
     }
   });
 
   useEffect(() => {
     if (hash && verificationRequestId === '') {
-      // Store the hash as request ID for verification
       setVerificationRequestId(hash);
-
-      // Poll Verified History to see if our game appears
       const pollInterval = setInterval(async () => {
         try {
           const result = await refetchGameCount();
@@ -1170,8 +1059,7 @@ const Index = () => {
         } catch (error) {
           console.error("Polling error:", error);
         }
-      }, 5000); // Check every 5 seconds
-
+      }, 5000);
       return () => clearInterval(pollInterval);
     }
   }, [hash, verificationRequestId, refetchGameCount]);
@@ -1181,23 +1069,18 @@ const Index = () => {
       toast.error("Game is not over yet!");
       return;
     }
-
-    // Allow any participating player to broadcast the score
     const p1Addr = gameState.players[0].address;
     const p2Addr = gameState.players[1].address;
-
     const isParticipant = address && (
       address.toLowerCase() === p1Addr.toLowerCase() ||
       address.toLowerCase() === p2Addr.toLowerCase() ||
       p1Addr === '0x0000000000000000000000000000000000000001' ||
       p2Addr === '0x0000000000000000000000000000000000000001'
     );
-
     if (!isParticipant) {
       toast.error("Only match participants can broadcast the score!");
       return;
     }
-
     try {
       writeContract({
         address: activeContractAddress as `0x${string}`,
@@ -1228,7 +1111,6 @@ const Index = () => {
             placeholder="What should we call you?"
             className="bg-white/5 border-white/10 text-white placeholder:text-white/10 h-12 rounded-xl focus:border-primary/50"
           />
-          {/* ✅ REMOVED the "Link Your Wallet" button from here */}
         </div>
       );
     }
@@ -1288,7 +1170,6 @@ const Index = () => {
             </div>
           ) : isMatchValid ? (
             <div className="space-y-3">
-              {/* Participant Verification Notice */}
               {address &&
                 address.toLowerCase() !== (contractMatch as any).player1.toLowerCase() &&
                 address.toLowerCase() !== (contractMatch as any).player2.toLowerCase() && (
@@ -1340,8 +1221,6 @@ const Index = () => {
                   ? "Match details verified. Confirm your entry below."
                   : "Waiting for both commanders to join via fillinggame.vercel.app"}
               </p>
-
-              {/* Manual Confirmation Button */}
               {(contractMatch as any).player1Paid && (contractMatch as any).player2Paid && (
                 <Button
                   onClick={startGame}
@@ -1372,12 +1251,10 @@ const Index = () => {
               placeholder="Enter your name"
               className="bg-white/5 border-white/10 text-white placeholder:text-white/10 h-10 rounded-xl focus:border-primary/50 text-sm mb-2"
             />
-            {/* ✅ REMOVED the "Link Your Wallet" button from here */}
           </div>
 
           {!isLobbyJoined ? (
             <>
-              {/* Public Spectator Toggle */}
               <div
                 className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 mb-2 cursor-pointer select-none"
                 onClick={() => setMakePublic(v => !v)}
@@ -1427,7 +1304,6 @@ const Index = () => {
               </div>
 
               <div className="space-y-3">
-                {/* Host Box */}
                 <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border border-primary/40`}>
                   <div className="flex flex-col">
                     <span className="text-[10px] text-white/60 uppercase font-black">{p1Name || 'Host'}</span>
@@ -1438,7 +1314,6 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* Guest Box */}
                 <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${p2Name || p2Address ? 'border-primary/40' : 'border-white/5'}`}>
                   <div className="flex flex-col text-left">
                     <span className="text-[10px] text-white/60 uppercase font-black">
@@ -1492,7 +1367,6 @@ const Index = () => {
   if (!gameStarted || !gameState) {
     return (
       <>
-        {/* ✅ Global Header - Always Visible, Always Accessible */}
         <GlobalHeader
           theme={theme}
           onThemeChange={setTheme}
@@ -1521,7 +1395,6 @@ const Index = () => {
               <h1 className="text-6xl text-white tracking-[0.2em] mb-2">FILLING GAME</h1>
               <p className="text-primary text-sm font-mono-game uppercase tracking-[0.3em] opacity-80">Strategic Dart Simulation</p>
               <div className="space-y-6 pt-4">
-                {/* Tab Switcher */}
                 <div className="grid grid-cols-2 sm:flex p-1 bg-white/5 rounded-xl border border-white/10 gap-1 sm:gap-0">
                   <button
                     onClick={() => setSetupMode('solo')}
@@ -1582,7 +1455,6 @@ const Index = () => {
 
   return (
     <>
-      {/* ✅ Global Header - Always Visible, Always Accessible */}
       <GlobalHeader
         theme={theme}
         onThemeChange={setTheme}
@@ -1606,13 +1478,10 @@ const Index = () => {
       <div className={`min-h-screen theme-${theme} p-3 md:p-6 flex flex-col items-center transition-colors duration-700 font-sans`}>
         <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
 
-
+        {/* ===== VICTORY OVERLAY ===== */}
         {gameState.gameOver && gameState.winner !== null && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto py-8">
-            <div className="glass-panel p-8 md:p-12 rounded-[2rem] border-primary text-center neon-border-theme max-h-[90vh] overflow-y-auto custom-scrollbar max-w-lg w-full mx-4">
-              <h2 className="text-4xl md:text-5xl text-primary font-black italic mb-2 uppercase">{gameState.players[gameState.winner].name} WINS!</h2>
-              <p className="text-white/60 text-xs font-mono-game uppercase tracking-widest mb-4">Final Score: {gameState.players[gameState.winner].totalScore} pts</p>
-
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto py-4 sm:py-8">
+            <div className="glass-panel p-6 sm:p-8 md:p-12 rounded-[1.5rem] sm:rounded-[2rem] border-primary text-center neon-border-theme max-h-[95vh] overflow-y-auto custom-scrollbar max-w-lg w-full mx-3 sm:mx-4">
               <NFTVictoryCard
                 winnerName={gameState.players[gameState.winner].name}
                 score={gameState.players[gameState.winner].totalScore}
@@ -1671,23 +1540,15 @@ const Index = () => {
                       toast.error("Switchboard verifier not configured for this network yet.");
                       return;
                     }
-
                     setIsVerifying(true);
-
                     try {
-                      const winnerName =
-                        gameState?.players[gameState.winner!]?.name || "Anonymous";
-
-                      // 1. Ask the Switchboard quorum to replay the game and sign the result.
+                      const winnerName = gameState?.players[gameState.winner!]?.name || "Anonymous";
                       const bundle = await fetchVerifiedUpdate(activeChainId, {
                         hitHistory,
                         winnerName,
                         winnerAddress: address,
                         matchId: activeSyncId ?? '',
                       });
-
-                      // 2. Submit the signed updates on-chain. Contract verifies the
-                      //    signatures via the Switchboard router and records the score.
                       writeContract({
                         address: activeVerifierAddress as `0x${string}`,
                         abi: VERIFIER_CONTRACT_ABI,
@@ -1695,10 +1556,8 @@ const Index = () => {
                         args: [bundle.encodedUpdates, winnerName],
                         account: address as `0x${string}`,
                         chain: chain,
-                        // Pay the per-update Switchboard fee (refund of surplus is automatic).
                         value: parseEther('0.0005'),
                       });
-
                       toast.success("Verification submitted via Switchboard!");
                     } catch (error) {
                       console.error("Verification failed:", error);
@@ -1801,7 +1660,7 @@ const Index = () => {
           </div>
         )}
 
-        {/* ✅ Pause Overlay */}
+        {/* ===== PAUSE OVERLAY ===== */}
         {isPaused && !gameState.gameOver && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="glass-panel p-12 rounded-[3rem] border-2 border-yellow-500/50 text-center space-y-6 max-w-md">
@@ -1827,33 +1686,24 @@ const Index = () => {
           </div>
         )}
 
-        {/* Top header bar: title + live status, centered above the 3-column layout */}
+        {/* ===== TOP HEADER BAR ===== */}
         <div className="w-full max-w-[1700px] mb-4 px-2 flex flex-col items-center gap-3">
           <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
-            {/* Turn Info */}
             <span className="font-mono-game text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
               {gameState.players[gameState.currentPlayer].name}'S TURN
             </span>
-
             <div className="h-5 w-[1px] bg-white/20" />
-
-            {/* Darts Remaining */}
             <span className="text-white/80 text-[11px] font-mono-game tracking-[0.2em] uppercase font-semibold">
               {gameState.dartsRemaining} DARTS REMAINING
             </span>
-
-            {/* ✅ Pause Indicator */}
             {isPaused && (
               <span className="flex items-center gap-1.5 text-[10px] font-black text-yellow-300 animate-pulse bg-yellow-500/30 px-3 py-1 rounded-full border border-yellow-500/50">
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
                 PAUSED
               </span>
             )}
-
             <div className="h-5 w-[1px] bg-white/20" />
-
-            {/* ✅ Pause / Resume Button - SOLID BACKGROUND */}
             <Button
               size="sm"
               onClick={togglePause}
@@ -1864,8 +1714,6 @@ const Index = () => {
             >
               {isPaused ? '▶️ Resume' : '⏸️ Pause'}
             </Button>
-
-            {/* ✅ Exit Button - SOLID BACKGROUND */}
             <Button
               size="sm"
               onClick={exitGame}
@@ -1873,8 +1721,6 @@ const Index = () => {
             >
               ✕ Exit
             </Button>
-
-            {/* ✅ New Game Button - SOLID BACKGROUND */}
             <Button
               size="sm"
               onClick={resetGame}
@@ -1885,66 +1731,58 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="w-full max-w-[1700px] flex flex-col xl:flex-row gap-6 items-stretch justify-center min-h-0 pb-10">
-          {/* Left: Log */}
-          <div className="xl:w-[320px] w-full flex-shrink-0 flex flex-col h-full order-3 xl:order-1 xl:pt-0">
-            <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl">
-              <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
-                <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Activity Log</h3>
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              </div>
-              <div className="flex-1 overflow-hidden h-full">
-                <GameLog
-                  messages={gameState.logMessages}
-                  p1Name={gameState.players[0].name}
-                  p2Name={gameState.players[1].name}
-                  theme={theme}
-                />
-              </div>
-            </div>
+        {/* ===== MOBILE-FIRST LAYOUT ===== */}
+        <div className="w-full max-w-[1700px] flex flex-col gap-4 sm:gap-6 pb-10">
 
-            {/* Target Score Display */}
-            <div className="mt-4 glass-panel rounded-3xl p-5 border-white/10 shadow-2xl animate-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
-                <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
-                  Batch {gameState.batch}
-                </div>
-              </div>
-              {gameState.batch === 2 && gameState.batch1Scores && (
-                <div className="grid grid-cols-2 gap-4 mt-1 mb-4">
-                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                    <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
-                    <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
-                  </div>
-                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                    <div className="text-[8px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
-                    <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
-                  </div>
-                </div>
+          {/* === ROW 1: Game Header === */}
+          <div className="w-full">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
+              <span className="font-mono-game text-[10px] sm:text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
+                {gameState.players[gameState.currentPlayer].name}'S TURN
+              </span>
+              <div className="h-4 w-[1px] bg-white/20" />
+              <span className="text-white/80 text-[10px] sm:text-[11px] font-mono-game tracking-[0.2em] uppercase font-semibold">
+                {gameState.dartsRemaining} DARTS
+              </span>
+              {isPaused && (
+                <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-black text-yellow-300 animate-pulse bg-yellow-500/30 px-2 py-0.5 rounded-full border border-yellow-500/50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                  PAUSED
+                </span>
               )}
-              {gameState.batch === 1 && (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white tracking-tighter italic">221.5</span>
-                  <span className="text-[10px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
-                </div>
-              )}
-              {gameState.batch === 2 && gameState.batch1Scores && (
-                <div className="mt-1 space-y-1.5 border-t border-white/5 pt-3">
-                  <div className="text-[9px] font-medium leading-tight text-primary/80">
-                    <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win Batch 2
-                  </div>
-                  <div className="text-[9px] font-medium leading-tight text-secondary/80">
-                    <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win Batch 2
-                  </div>
-                </div>
-              )}
+              <div className="h-4 w-[1px] bg-white/20 hidden sm:block" />
+              <Button
+                size="sm"
+                onClick={togglePause}
+                className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest h-7 sm:h-7 px-2 sm:px-3 rounded-lg transition-all touch-target ${isPaused
+                  ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'
+                  : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/30'
+                  }`}
+              >
+                {isPaused ? '▶️' : '⏸️'}
+                <span className="hidden sm:inline">{isPaused ? 'Resume' : 'Pause'}</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={exitGame}
+                className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest h-7 sm:h-7 px-2 sm:px-3 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all touch-target"
+              >
+                ✕
+                <span className="hidden sm:inline">Exit</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={resetGame}
+                className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest h-7 sm:h-7 px-2 sm:px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 border border-white/10 transition-all touch-target"
+              >
+                <span className="hidden sm:inline">New</span> Game
+              </Button>
             </div>
           </div>
 
-          {/* Center: Board */}
-          <div className="flex-1 flex flex-col items-center justify-between min-w-0 order-1 xl:order-2 py-4">
-            <div className="flex-1 flex items-center justify-center min-h-0">
+          {/* === ROW 2: Dartboard === */}
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-[600px]">
               <Dartboard
                 gameState={gameState}
                 onHitNumber={handleHitNumber}
@@ -1954,67 +1792,137 @@ const Index = () => {
                 theme={theme}
               />
             </div>
-            <div className="flex flex-col items-center gap-4 w-full max-w-md mt-4">
+          </div>
 
-              {!gameState.isVsCPU && (
-                <div className="flex flex-wrap justify-center gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={shareSyncLink}
-                    className="glass-panel border-primary/20 hover:bg-primary/10 text-primary-light text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
-                  >
-                    <Share2 className="w-3 h-3 mr-2" />
-                    Sync Link
-                  </Button>
-                  {makePublic && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        const activeMatchId = setupMode === 'invite' ? inviteCode : String(parsedMatchId || '');
-                        const specLink = `${window.location.origin}/watch?match=${activeMatchId}`;
-                        await navigator.clipboard.writeText(specLink);
-                        toast.success("Spectator Link Copied!", { description: "Anyone can watch this live match." });
-                      }}
-                      className="glass-panel border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 text-[10px] tracking-widest uppercase font-black px-4 py-3 rounded-xl"
-                    >
-                      <Eye className="w-3 h-3 mr-2" />
-                      Spectator Link
-                    </Button>
-                  )}
+          {/* === ROW 3: Collapsible Panels === */}
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* Left Panel: Game Log */}
+            <div className="w-full">
+              <button
+                onClick={() => setIsLogExpanded(!isLogExpanded)}
+                className="w-full flex items-center justify-between p-3 sm:p-4 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📜</span>
+                  <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-white/80">
+                    Game Activity Log
+                  </span>
+                  <span className="text-[9px] text-white/30 font-mono">
+                    ({gameState.logMessages.length})
+                  </span>
+                </div>
+                <span className={`text-white/40 transition-transform ${isLogExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              {isLogExpanded && (
+                <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
+                  <GameLog
+                    messages={gameState.logMessages}
+                    p1Name={gameState.players[0].name}
+                    p2Name={gameState.players[1].name}
+                    theme={theme}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Right Panel: Stats */}
+            <div className="w-full">
+              <button
+                onClick={() => setIsScoresExpanded(!isScoresExpanded)}
+                className="w-full flex items-center justify-between p-3 sm:p-4 bg-[#1a1a2e] border border-white/10 rounded-2xl transition-all hover:bg-white/5 touch-target"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📊</span>
+                  <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-white/80">
+                    Live Match Stats
+                  </span>
+                  <span className="text-[9px] text-white/30 font-mono">
+                    Batch {gameState.batch}
+                  </span>
+                </div>
+                <span className={`text-white/40 transition-transform ${isScoresExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              {isScoresExpanded && (
+                <div className="mt-2 animate-in slide-in-from-top-2 duration-300">
+                  <div className="glass-panel rounded-3xl p-4 sm:p-5 border-white/10 shadow-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
+                      <div className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${gameState.batch === 1 ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
+                        Batch {gameState.batch}
+                      </div>
+                    </div>
+                    {gameState.batch === 2 && gameState.batch1Scores && (
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                          <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[0].name} B1</div>
+                          <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[0]} pts</div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                          <div className="text-[7px] font-black text-white/30 uppercase tracking-widest">{gameState.players[1].name} B1</div>
+                          <div className="text-sm font-bold text-white italic">{gameState.batch1Scores[1]} pts</div>
+                        </div>
+                      </div>
+                    )}
+                    {gameState.batch === 1 && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl sm:text-3xl font-black text-white tracking-tighter italic">221.5</span>
+                        <span className="text-[8px] sm:text-[10px] font-mono-game text-white/20 uppercase tracking-widest">points</span>
+                      </div>
+                    )}
+                    {gameState.batch === 2 && gameState.batch1Scores && (
+                      <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
+                        <div className="text-[8px] sm:text-[9px] font-medium leading-tight text-primary/80">
+                          <span className="font-black">NOTE:</span> {gameState.players[0].name} needs <span className="underline">{gameState.batch1Scores[1]} pts</span> to win
+                        </div>
+                        <div className="text-[8px] sm:text-[9px] font-medium leading-tight text-secondary/80">
+                          <span className="font-black">NOTE:</span> {gameState.players[1].name} needs <span className="underline">{gameState.batch1Scores[0]} pts</span> to win
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <MasterScoringTable gameState={gameState} theme={theme} />
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right: Table — tabs pinned to bottom of column */}
-          <div className="xl:w-[620px] w-full flex-shrink-0 order-2 flex flex-col shadow-2xl">
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {rightColTab === 'stats' ? (
-                <MasterScoringTable gameState={gameState} />
-              ) : (
-                <VerifiedScoreboard />
+          {/* === ROW 4: Bottom Buttons === */}
+          {!gameState.isVsCPU && (
+            <div className="w-full flex flex-wrap justify-center gap-2 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={shareSyncLink}
+                className="glass-panel border-primary/20 hover:bg-primary/10 text-[10px] tracking-widest uppercase font-black px-3 sm:px-4 py-2 sm:py-3 rounded-xl touch-target"
+              >
+                <Share2 className="w-3 h-3 sm:w-3 sm:h-3 mr-1" />
+                Sync Link
+              </Button>
+              {makePublic && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    const activeMatchId = setupMode === 'invite' ? inviteCode : String(parsedMatchId || '');
+                    const specLink = `${window.location.origin}/watch?match=${activeMatchId}`;
+                    await navigator.clipboard.writeText(specLink);
+                    toast.success("Spectator Link Copied!", { description: "Anyone can watch this live match." });
+                  }}
+                  className="glass-panel border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 text-[10px] tracking-widest uppercase font-black px-3 sm:px-4 py-2 sm:py-3 rounded-xl touch-target"
+                >
+                  <Eye className="w-3 h-3 sm:w-3 sm:h-3 mr-1" />
+                  Spectator Link
+                </Button>
               )}
             </div>
-            {/* Tab Switcher pinned to the bottom of the scoreboard column */}
-            <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mt-3">
-              <button
-                onClick={() => setRightColTab('stats')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'stats' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-primary hover:text-primary hover:bg-primary/10'}`}
-              >
-                <Activity className="w-3 h-3" />
-                Live Match Stats
-              </button>
-              <button
-                onClick={() => setRightColTab('history')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'history' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/10'}`}
-              >
-                <Trophy className="w-3 h-3" />
-                Verified History
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
         <BatchTransitionOverlay
@@ -2032,41 +1940,43 @@ const Index = () => {
 const BatchTransitionOverlay = ({ show, scores, players, onClose }: any) => {
   if (!show || !scores) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="max-w-2xl w-full glass-panel p-12 rounded-[3rem] border-2 border-primary text-center space-y-8 animate-in zoom-in slide-in-from-bottom-12">
-        <h2 className="text-5xl font-black italic text-primary text-glow-theme leading-tight">BATCH 1 COMPLETE!</h2>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+      <div className="max-w-2xl w-full glass-panel p-6 sm:p-8 md:p-12 rounded-[2rem] sm:rounded-[3rem] border-2 border-primary text-center space-y-6 sm:space-y-8 animate-in zoom-in slide-in-from-bottom-12">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black italic text-primary text-glow-theme leading-tight">BATCH 1 COMPLETE!</h2>
 
-        <div className="grid grid-cols-2 gap-6 pt-4">
-          <div className="glass-panel p-6 border-white/5 bg-white/5 rounded-2xl">
-            <div className="text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[0].name}</div>
-            <div className="text-3xl font-black text-white italic">{scores[0]} pts</div>
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 pt-2 sm:pt-4">
+          <div className="glass-panel p-4 sm:p-6 border-white/5 bg-white/5 rounded-2xl">
+            <div className="text-[9px] sm:text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[0].name}</div>
+            <div className="text-2xl sm:text-3xl font-black text-white italic">{scores[0]} pts</div>
           </div>
-          <div className="glass-panel p-6 border-white/5 bg-white/5 rounded-2xl">
-            <div className="text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[1].name}</div>
-            <div className="text-3xl font-black text-white italic">{scores[1]} pts</div>
+          <div className="glass-panel p-4 sm:p-6 border-white/5 bg-white/5 rounded-2xl">
+            <div className="text-[9px] sm:text-[10px] font-black tracking-widest text-white/40 mb-1 uppercase">{players[1].name}</div>
+            <div className="text-2xl sm:text-3xl font-black text-white italic">{scores[1]} pts</div>
           </div>
         </div>
 
-        <div className="space-y-4 pt-4">
-          <h3 className="text-primary font-black uppercase tracking-[0.2em] text-sm">Batch 2: The Race to Beat the Bar</h3>
-          <div className="glass-panel p-8 bg-black/40 rounded-[2rem] text-left border-white/10 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">🎯</div>
-              <p className="text-white/90 text-[13px] leading-relaxed">
+        <div className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
+          <h3 className="text-primary font-black uppercase tracking-[0.2em] text-xs sm:text-sm">Batch 2: The Race to Beat the Bar</h3>
+          <div className="glass-panel p-4 sm:p-6 md:p-8 bg-black/40 rounded-[1.5rem] sm:rounded-[2rem] text-left border-white/10 space-y-3 sm:space-y-4">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm sm:text-base shrink-0">🎯</div>
+              <p className="text-white/90 text-[11px] sm:text-[13px] leading-relaxed">
                 <strong>{players[0].name}</strong> needs to surpass <strong>{scores[1]} pts</strong> ({players[1].name}'s score) to win.
               </p>
             </div>
             <div className="h-[1px] bg-white/5 w-full" />
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold">🏁</div>
-              <p className="text-white/90 text-[13px] leading-relaxed">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold text-sm sm:text-base shrink-0">🏁</div>
+              <p className="text-white/90 text-[11px] sm:text-[13px] leading-relaxed">
                 <strong>{players[1].name}</strong> needs to surpass <strong>{scores[0]} pts</strong> ({players[0].name}'s score) to win.
               </p>
             </div>
           </div>
         </div>
 
-        <Button onClick={onClose} className="bg-primary hover:bg-primary/80 text-white font-black px-12 py-8 text-2xl rounded-2xl shadow-xl w-full mt-4 transform hover:scale-105 transition-all">START BATCH 2 RACE 🏹</Button>
+        <Button onClick={onClose} className="bg-primary hover:bg-primary/80 text-white font-black px-8 sm:px-12 py-6 sm:py-8 text-lg sm:text-2xl rounded-2xl shadow-xl w-full mt-2 sm:mt-4 transform hover:scale-105 transition-all touch-target">
+          START BATCH 2 RACE 🏹
+        </Button>
       </div>
     </div>
   );
