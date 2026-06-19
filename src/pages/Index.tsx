@@ -239,7 +239,7 @@ const RulesScroll = () => (
 
 const Index = () => {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<'neon' | 'avalanche' | 'gold' | 'midnight'>('neon');
+  const [theme, setTheme] = useState<'neon' | 'avalanche' | 'gold' | 'midnight' | 'royal' | 'ivory' | 'obsidian' | 'sapphire' | 'rosewood' | 'emerald' | 'platinum' | 'crimson'>('neon');
   const [gameStarted, setGameStarted] = useState(false);
   const [p1Name, setP1Name] = useState('');
   const [p2Name, setP2Name] = useState('');
@@ -295,6 +295,16 @@ const Index = () => {
       window.removeEventListener('THROW_DART', handleThrow);
     };
   }, []);
+
+  // ✅ ADD THIS RIGHT HERE - Theme Effect for Global Styling
+  useEffect(() => {
+    // Apply theme class to body for global styling
+    document.body.className = `theme-${theme}`;
+    return () => {
+      document.body.className = '';
+    };
+  }, [theme]);
+
 
   const { address, isConnected, chain } = useAccount();
   const activeChainId = chain?.id || SUPPORTED_CHAINS[0].id;
@@ -1525,7 +1535,7 @@ const Index = () => {
 
                 {setupMode === 'solo' && (
                   <Button onClick={startSoloGame} className="w-full h-14 bg-primary text-white font-black text-xl rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all">
-                    🚀 Start Solo Mission
+                    🚀 Start Game
                   </Button>
                 )}
 
@@ -1591,7 +1601,6 @@ const Index = () => {
                 explorerUrl={chain?.blockExplorers?.default?.url && hash ? `${chain.blockExplorers.default.url}/tx/${hash}` : undefined}
                 theme={theme}
               />
-
               {gameState.batch1Scores && (
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 animate-in slide-in-from-top-4 duration-700 delay-300">
                   <div className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-3">Batch 1 Intelligence Report</div>
@@ -1862,7 +1871,12 @@ const Index = () => {
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               </div>
               <div className="flex-1 overflow-hidden h-full">
-                <GameLog messages={gameState.logMessages} p1Name={gameState.players[0].name} p2Name={gameState.players[1].name} />
+                <GameLog
+                  messages={gameState.logMessages}
+                  p1Name={gameState.players[0].name}
+                  p2Name={gameState.players[1].name}
+                  theme={theme}
+                />
               </div>
             </div>
 
@@ -1908,7 +1922,14 @@ const Index = () => {
           {/* Center: Board */}
           <div className="flex-1 flex flex-col items-center justify-between min-w-0 order-1 xl:order-2 py-4">
             <div className="flex-1 flex items-center justify-center min-h-0">
-              <Dartboard gameState={gameState} onHitNumber={handleHitNumber} onHitRing={handleHitRing} disabled={gameState.gameOver} turnSeconds={turnSeconds} />
+              <Dartboard
+                gameState={gameState}
+                onHitNumber={handleHitNumber}
+                onHitRing={handleHitRing}
+                disabled={gameState.gameOver}
+                turnSeconds={turnSeconds}
+                theme={theme}
+              />
             </div>
             <div className="flex flex-col items-center gap-4 w-full max-w-md mt-4">
 

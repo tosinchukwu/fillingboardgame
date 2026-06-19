@@ -1,12 +1,16 @@
 import React from 'react';
 import { GameState } from '../game/gameLogic';
 import { TOTAL_NUMBERS } from '../game/boardLayout';
+import { useTheme, ThemeType } from '../hooks/useTheme';
 
 interface MasterScoringTableProps {
     gameState: GameState;
+    theme?: ThemeType;
 }
 
-const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState }) => {
+const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState, theme = 'avalanche' }) => {
+    const colors = useTheme(theme);
+
     const getOrdinal = (n: number) => {
         const s = ["th", "st", "nd", "rd"];
         const v = n % 100;
@@ -18,18 +22,14 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState }) =>
         const p2 = gameState.players[1];
         const seq = gameState.hitSequences[n];
 
-        // Ordinal positions for Hits
         const p1Positions = seq.map((p, i) => p === 0 ? getOrdinal(i + 1) : null).filter(Boolean);
         const p2Positions = seq.map((p, i) => p === 1 ? getOrdinal(i + 1) : null).filter(Boolean);
 
         const p1HitsDisplay = p1Positions.length > 0 ? p1Positions.join(', ') : '-';
         const p2HitsDisplay = p2Positions.length > 0 ? p2Positions.join(', ') : '-';
 
-        // Filler +2 Earners in order
         const fillerEarners = seq.map(p => p === 0 ? 'A' : 'B').join(', ');
 
-        // Top Filler bonus (Highest hits) - Only for 2-14
-        // CONDITION: Triggered once at least ONE player has hit more than half of the number
         let tfpEarner = '-';
         let tfpA = 0;
         let tfpB = 0;
@@ -50,7 +50,6 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState }) =>
             }
         }
 
-        // Fill-Up bonus (Last to complete both OR per-hit for Number 1)
         let fuEarner = '-';
         let fuA = 0;
         let fuB = 0;
@@ -67,7 +66,6 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState }) =>
             if (lastPlayer === 0) fuA = 10; else fuB = 10;
         }
 
-        // Filler points for this row (Capped at n*2, EXCEPT for Number 1)
         const fillerA = n === 1 ? (p1.hits[1] * 2) : Math.min(p1.hits[n] * 2 + p1.bonusPoints[n], n * 2);
         const fillerB = n === 1 ? (p2.hits[1] * 2) : Math.min(p2.hits[n] * 2 + p2.bonusPoints[n], n * 2);
 
@@ -84,23 +82,27 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState }) =>
                     {p2HitsDisplay}
                 </td>
                 <td className="py-2 px-3 text-white/50 text-[10px] text-center">{fillerEarners || '-'}</td>
-                <td className="py-2 px-3 text-primary text-[11px] font-black text-center">{tfpEarner}</td>
+                <td className="py-2 px-3 text-primary text-[11px] font-black text-center" style={{ color: colors.accent }}>{tfpEarner}</td>
                 <td className="py-2 px-3 text-secondary text-[11px] font-black text-center">{fuEarner}</td>
-                <td className="py-2 px-3 text-primary font-bold text-xs text-center">
+                <td className="py-2 px-3 text-primary font-bold text-xs text-center" style={{ color: colors.accent }}>
                     {totalA > 0 ? totalA : '-'}
                 </td>
-                <td className="py-2 px-3 text-secondary font-bold text-xs text-center">
-                    {totalB > 0 ? totalB : '-'}
-                </td>
+                <td className="py-2 px-3 text-secondary font-bold text-xs text-center">{totalB > 0 ? totalB : '-'}</td>
             </tr>
         );
     };
 
     return (
-        <div className="glass-panel rounded-3xl overflow-hidden border-white/10 shadow-2xl flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-700">
+        <div
+            className="glass-panel rounded-3xl overflow-hidden border-white/10 shadow-2xl flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-700"
+            style={{ borderColor: colors.border }}
+        >
             <div className="bg-white/5 p-4 border-b border-white/10 flex items-center justify-between">
                 <h3 className="text-sm font-black tracking-[0.2em] uppercase text-white flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(232,65,66,0.6)]" />
+                    <span
+                        className="w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px_rgba(232,65,66,0.6)]"
+                        style={{ backgroundColor: colors.accent, boxShadow: `0 0 8px ${colors.glow}` }}
+                    />
                     MASTER SCORING TABLE (Number-Based Format)
                 </h3>
                 <span className="text-[10px] font-mono-game text-white/30 uppercase tracking-widest hidden sm:inline">Strategy Logic Applied</span>
@@ -129,7 +131,10 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState }) =>
             <div className="bg-black/40 p-4 border-t border-white/10 flex justify-between items-center font-mono-game">
                 <div className="flex flex-col gap-1">
                     <span className="text-[9px] text-white/30 uppercase tracking-widest">Board Status</span>
-                    <span className="text-[11px] text-primary font-bold uppercase tracking-widest">
+                    <span
+                        className="text-[11px] font-bold uppercase tracking-widest"
+                        style={{ color: colors.accent }}
+                    >
                         {gameState.closedNumbers.size} / {TOTAL_NUMBERS} Fully Closed
                     </span>
                 </div>
@@ -147,6 +152,5 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState }) =>
         </div>
     );
 };
-
 
 export default MasterScoringTable;

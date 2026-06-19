@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronDown, Globe, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { useAccount, useSwitchChain, useChainId } from 'wagmi';
 import { SUPPORTED_CHAINS } from '../lib/constants';
 import { toast } from 'sonner';
@@ -120,13 +120,11 @@ export const NetworkSwitcher = () => {
 
       {isOpen && (
         <>
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
           
-          {/* Dropdown */}
           <div className="absolute right-0 mt-2 w-56 bg-[#1a1a2e] border border-gray-700 rounded-xl shadow-xl p-1 z-50">
             <div className="px-3 py-2 border-b border-gray-700">
               <span className="text-[10px] font-black uppercase tracking-widest text-white/40">

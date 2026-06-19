@@ -73,10 +73,21 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
     const themes = [
-        { id: 'neon', label: 'Neon Space', color: '#00f2fe' },
-        { id: 'avalanche', label: 'Avalanche', color: '#E84142' },
-        { id: 'gold', label: 'Cyber Gold', color: '#ffb400' },
-        { id: 'midnight', label: 'Deep Sea', color: '#00ff88' },
+        // Modern Themes (existing)
+        { id: 'neon', label: 'Neon', icon: '💜', category: 'Modern', color: '#00f2fe' },
+        { id: 'avalanche', label: 'Avalanche', icon: '❄️', category: 'Modern', color: '#E84142' },
+        { id: 'gold', label: 'Gold', icon: '✨', category: 'Modern', color: '#ffb400' },
+        { id: 'midnight', label: 'Midnight', icon: '🌙', category: 'Modern', color: '#00ff88' },
+
+        // Classical & Elegance Themes (new)
+        { id: 'royal', label: 'Royal', icon: '👑', category: 'Classical', color: '#D4AF37' },
+        { id: 'ivory', label: 'Ivory', icon: '🤍', category: 'Classical', color: '#C9A84C' },
+        { id: 'obsidian', label: 'Obsidian', icon: '🖤', category: 'Classical', color: '#C0C0C0' },
+        { id: 'sapphire', label: 'Sapphire', icon: '💎', category: 'Classical', color: '#B8C6DB' },
+        { id: 'rosewood', label: 'Rosewood', icon: '🌹', category: 'Classical', color: '#E8B4B8' },
+        { id: 'emerald', label: 'Emerald', icon: '💚', category: 'Classical', color: '#D4AF37' },
+        { id: 'platinum', label: 'Platinum', icon: '⭐', category: 'Classical', color: '#2D2D2D' },
+        { id: 'crimson', label: 'Crimson', icon: '❤️', category: 'Classical', color: '#F7E7CE' },
     ];
 
     const musicTracks = [
@@ -210,18 +221,51 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
                             <Palette className="w-5 h-5 drop-shadow-sm" />
                             <Label className="text-xs font-mono-game uppercase tracking-[0.2em] font-black">Visual Theme</Label>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            {themes.map((t) => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => onThemeChange(t.id)}
-                                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-white/5 ${theme === t.id ? 'border-primary bg-primary/10' : 'border-white/5 bg-transparent'
-                                        }`}
-                                >
-                                    <div className="w-3 h-3 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: t.color, color: t.color }} />
-                                    <span className="text-[10px] font-mono-game uppercase tracking-widest text-indigo-950 font-black">{t.label}</span>
-                                </button>
-                            ))}
+
+                        {/* Modern Themes */}
+                        <div className="space-y-1.5">
+                            <span className="text-[8px] uppercase tracking-widest text-indigo-950/40 font-bold ml-1">Modern</span>
+                            <div className="grid grid-cols-4 gap-2">
+                                {themes.filter(t => t.category === 'Modern').map((t) => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => onThemeChange(t.id)}
+                                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all hover:bg-white/5
+                                            ${theme === t.id ? 'border-primary bg-primary/10 scale-105' : 'border-white/5 bg-transparent'}`}
+                                    >
+                                        <div
+                                            className="w-6 h-6 rounded-full shadow-[0_0_12px_currentColor]"
+                                            style={{ backgroundColor: t.color, color: t.color }}
+                                        />
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-indigo-950">{t.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Classical & Elegance Themes */}
+                        <div className="space-y-1.5 pt-2 border-t border-indigo-950/10">
+                            <span className="text-[8px] uppercase tracking-widest text-[#D4AF37]/60 font-bold ml-1 flex items-center gap-2">
+                                <span>✦</span>
+                                Classical &amp; Elegance
+                                <span>✦</span>
+                            </span>
+                            <div className="grid grid-cols-4 gap-2">
+                                {themes.filter(t => t.category === 'Classical').map((t) => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => onThemeChange(t.id)}
+                                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all hover:bg-white/5
+                                            ${theme === t.id ? 'border-[#D4AF37]/50 bg-white/10 scale-105' : 'border-white/5 bg-transparent'}`}
+                                    >
+                                        <div
+                                            className="w-6 h-6 rounded-full shadow-[0_0_12px_currentColor]"
+                                            style={{ backgroundColor: t.color, color: t.color }}
+                                        />
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-indigo-950">{t.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
@@ -354,9 +398,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </div>
 
                     <div className="h-px bg-white/5" />
-
-                    {/* Gameplay Section (Placeholders for future) */}
-
                 </div>
             </DialogContent>
         </Dialog>

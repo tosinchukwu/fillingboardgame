@@ -1,16 +1,26 @@
 import React from 'react';
 import { RING_NUMBERS } from '../game/boardLayout';
+import { useTheme, ThemeType } from '../hooks/useTheme';
 
 interface GameLogProps {
   messages: string[];
   p1Name: string;
   p2Name: string;
+  theme?: ThemeType;
 }
 
-const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name }) => {
+const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'avalanche' }) => {
+  const colors = useTheme(theme);
+
   return (
-    <div className="bg-black/40 border border-white/10 rounded-2xl p-5 max-h-[500px] min-h-[300px] overflow-y-auto shadow-2xl glass-panel custom-scrollbar">
-      <h4 className="text-[10px] text-primary font-bold uppercase tracking-[0.2em] mb-4 font-mono-game border-b border-white/10 pb-3 flex items-center justify-between">
+    <div
+      className="bg-black/40 border border-white/10 rounded-2xl p-5 max-h-[500px] min-h-[300px] overflow-y-auto shadow-2xl glass-panel custom-scrollbar"
+      style={{ borderColor: colors.border }}
+    >
+      <h4
+        className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 font-mono-game border-b border-white/10 pb-3 flex items-center justify-between"
+        style={{ color: colors.accent }}
+      >
         Tactical Game Log
         <span className="text-[9px] text-white/30 animate-pulse">Live Feed</span>
       </h4>
@@ -32,7 +42,7 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name }) => {
 
             if (isP1) {
               textColor = "text-primary";
-              borderColor = "border-primary/30";
+              borderColor = `border-primary/30`;
               bgColor = "bg-primary/5";
               displayMsg = msg.replace(/\[.*?\]:\s*/, "");
             } else if (isP2) {
@@ -48,7 +58,11 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name }) => {
             }
 
             return (
-              <div key={i} className={`text-[11px] font-medium font-mono-game leading-relaxed border-l-2 pl-4 py-2 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}>
+              <div
+                key={i}
+                className={`text-[11px] font-medium font-mono-game leading-relaxed border-l-2 pl-4 py-2 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
+                style={isP1 ? { borderColor: colors.accent } : undefined}
+              >
                 <span className="opacity-100 group-hover:opacity-100 transition-opacity">{displayMsg}</span>
               </div>
             );

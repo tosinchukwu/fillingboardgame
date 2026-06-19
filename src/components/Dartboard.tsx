@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { BOARD_LAYOUT, RING_RADII, RING_NUMBERS } from '../game/boardLayout';
 import { GameState } from '../game/gameLogic';
+import { useTheme, ThemeType } from '../hooks/useTheme';
 
 interface DartboardProps {
   gameState: GameState;
@@ -9,6 +10,7 @@ interface DartboardProps {
   disabled: boolean;
   isSpectator?: boolean;
   turnSeconds?: number | null;
+  theme?: ThemeType;
 }
 
 const CENTER = 250;
@@ -135,7 +137,8 @@ function synthesizeSwipeFor(target: { ring: number; angle: number }): { dx: numb
   return { dx: aimX * 220, dy: -power * 280 };
 }
 
-const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing, disabled, isSpectator = false, turnSeconds = null }) => {
+const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing, disabled, isSpectator = false, turnSeconds = null, theme = 'avalanche' }) => {
+  const colors = useTheme(theme);
   const cp = gameState.currentPlayer;
 
   const [boardPhase, setBoardPhase] = useState<BoardPhase>('idle');
@@ -492,7 +495,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                 height="135"
                 transform={`rotate(${aimAngle} ${aim ? aim.curX : handleX} ${aim ? aim.curY - 120 : handleY})`}
                 style={{
-                  filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.5))',
+                  filter: `drop-shadow(0 6px 10px ${colors.accent}80)`,
                   opacity: aim ? 1 : 0.9,
                 }}
               />
@@ -504,11 +507,12 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               x={handleX}
               y={handleY + 145}
               textAnchor="middle"
-              fill="rgba(255,215,0,1)"
+              fill={colors.accent}
               fontSize="18"
               fontWeight="800"
               fontFamily="'Orbitron', sans-serif"
               letterSpacing="4"
+              style={{ filter: `drop-shadow(0 0 10px ${colors.accent}40)` }}
             >
               {getHint().toUpperCase()}
             </text>
@@ -519,12 +523,12 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               x={handleX}
               y={handleY + 100}
               textAnchor="middle"
-              fill={turnSeconds <= 3 ? '#ff4d6d' : '#00f0ff'}
+              fill={turnSeconds <= 3 ? '#ff4d6d' : colors.accent}
               fontSize="22"
               fontWeight="900"
               fontFamily="'Orbitron', sans-serif"
               letterSpacing="3"
-              style={{ filter: `drop-shadow(0 0 6px ${turnSeconds <= 3 ? '#ff4d6d' : '#00f0ff'})` }}
+              style={{ filter: `drop-shadow(0 0 6px ${turnSeconds <= 3 ? '#ff4d6d' : colors.accent})` }}
             >
               ⏱ {turnSeconds}s
             </text>

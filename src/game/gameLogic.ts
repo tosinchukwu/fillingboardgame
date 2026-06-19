@@ -15,20 +15,17 @@ export interface GameState {
   players: [PlayerState, PlayerState];
   currentPlayer: 0 | 1;
   dartsRemaining: number;
-  turnHistory: TurnAction[];
   closedNumbers: Set<number>;
-  hitSequences: Record<number, (0 | 1)[]>;
-  batch: 1 | 2;
-  batch1Score: number | null;
-  batch1Winner: 0 | 1 | null;
-  batch1Scores: [number, number] | null;
+  hitSequences: Record<number, number[]>;
+  logMessages: string[];
   gameOver: boolean;
   winner: 0 | 1 | null;
-  lastAction: string | null;
-  logMessages: string[];
+  batch: 1 | 2;
+  batch1Scores: [number, number] | null;
   isVsCPU: boolean;
-  theme: 'neon' | 'avalanche' | 'gold' | 'midnight';
-  latestDart: { x: number; y: number; angle: number; tilt: number; playerIdx: number } | null;
+  theme?: 'neon' | 'avalanche' | 'gold' | 'midnight' | 'royal' | 'ivory' | 'obsidian' | 'sapphire' | 'rosewood' | 'emerald' | 'platinum' | 'crimson';
+  latestDart?: { x: number; y: number; angle: number; tilt: number; playerIdx: number } | null;
+  lastAction?: string | null;
 }
 
 export interface TurnAction {
@@ -68,20 +65,17 @@ export function createInitialGameState(p1Name: string, p1Addr: string, p2Name: s
     players: [createInitialPlayer(p1Name, p1Addr), createInitialPlayer(p2Name, p2Addr)],
     currentPlayer: 0,
     dartsRemaining: 3,
-    turnHistory: [],
     closedNumbers: new Set(),
     hitSequences,
     batch: 1,
-    batch1Score: null,
-    batch1Winner: null,
     batch1Scores: null,
     gameOver: false,
     winner: null,
-    lastAction: null,
     logMessages: [],
     isVsCPU,
     theme: 'neon',
     latestDart: null,
+    lastAction: null,
   };
 }
 
@@ -252,8 +246,6 @@ function checkBatchConditions(state: GameState) {
       const benchmark = p1Score > p2Score ? p1Score : p2Score;
 
       state.batch = 2;
-      state.batch1Winner = b1w;
-      state.batch1Score = benchmark;
       state.batch1Scores = [p1Score, p2Score];
 
       state.players.forEach(p => {

@@ -7,8 +7,8 @@ import SettingsDialog, { CustomTrack } from './SettingsDialog';
 import { CircleWalletButton } from './CircleWalletButton';
 
 interface GlobalHeaderProps {
-  onThemeChange?: (theme: 'neon' | 'avalanche' | 'gold' | 'midnight') => void;
-  theme?: 'neon' | 'avalanche' | 'gold' | 'midnight';
+  onThemeChange?: (theme: 'neon' | 'avalanche' | 'gold' | 'midnight' | 'royal' | 'ivory' | 'obsidian' | 'sapphire' | 'rosewood' | 'emerald' | 'platinum' | 'crimson') => void;
+  theme?: 'neon' | 'avalanche' | 'gold' | 'midnight' | 'royal' | 'ivory' | 'obsidian' | 'sapphire' | 'rosewood' | 'emerald' | 'platinum' | 'crimson';
   onVolumeChange?: (volume: number) => void;
   volume?: number;
   onMusicToggle?: (enabled: boolean) => void;
@@ -28,7 +28,7 @@ interface GlobalHeaderProps {
 
 export const GlobalHeader = ({
   onThemeChange,
-  theme,
+  theme = 'avalanche',
   onVolumeChange,
   volume,
   onMusicToggle,
@@ -48,30 +48,58 @@ export const GlobalHeader = ({
   const [isBridgeOpen, setIsBridgeOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Get theme accent color for styling
+  const getThemeAccent = () => {
+    const accents: Record<string, string> = {
+      neon: '#00f2fe',
+      avalanche: '#E84142',
+      gold: '#ffb400',
+      midnight: '#00ff88',
+      royal: '#D4AF37',
+      ivory: '#C9A84C',
+      obsidian: '#C0C0C0',
+      sapphire: '#B8C6DB',
+      rosewood: '#E8B4B8',
+      emerald: '#D4AF37',
+      platinum: '#2D2D2D',
+      crimson: '#F7E7CE',
+    };
+    return accents[theme] || '#E84142';
+  };
+
+  const accentColor = getThemeAccent();
+
   const BridgeButton = () => (
-    <Button
-      variant="ghost"
-      onClick={() => setIsBridgeOpen(true)}
-      className="h-10 px-4 rounded-xl glass-panel border-white/10 text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+    <Button 
+      variant="ghost" 
+      onClick={() => setIsBridgeOpen(true)} 
+      className="h-10 px-4 rounded-xl glass-panel text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+      style={{ 
+        borderColor: `${accentColor}40`,
+        boxShadow: `0 0 15px ${accentColor}20`
+      }}
       title="Bridge Funds to Arc"
     >
-      <Coins className="w-4 h-4 text-primary" />
+      <Coins className="w-4 h-4" style={{ color: accentColor }} />
       <span>Bridge</span>
     </Button>
   );
 
-  // ✅ NEW REGISTER BUTTON - This is what you want
   const RegisterButton = () => (
     <a
       href="https://fillinggame.vercel.app/"
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 py-2 px-5 rounded-xl transition-all shadow-[0_0_15px_rgba(232,65,66,0.1)]"
+      className="flex items-center gap-2 py-2 px-4 rounded-xl transition-all h-10"
+      style={{ 
+        backgroundColor: `${accentColor}15`,
+        border: `1px solid ${accentColor}30`,
+        boxShadow: `0 0 15px ${accentColor}10`
+      }}
     >
-      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-      <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px]">Register Match</span>
+      <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accentColor }} />
+      <span className="font-black uppercase tracking-[0.15em] text-[10px]" style={{ color: accentColor }}>Register</span>
     </a>
-
   );
 
   return (
@@ -79,15 +107,15 @@ export const GlobalHeader = ({
       {/* Left Side - Bridge, Settings, Register */}
       <div className="fixed top-4 left-4 z-[9999] flex items-center gap-2">
         <BridgeButton />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsSettingsOpen(true)}
-          className="w-10 h-10 rounded-xl glass-panel border-white/10 text-white hover:bg-white/10 transition-all"
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsSettingsOpen(true)} 
+          className="w-10 h-10 rounded-xl glass-panel text-white hover:bg-white/10 transition-all"
+          style={{ borderColor: `${accentColor}40` }}
         >
-          <Settings className="w-5 h-5" />
+          <Settings className="w-5 h-5" style={{ color: accentColor }} />
         </Button>
-        {/* ✅ REGISTER BUTTON - Right here, next to Settings */}
         <RegisterButton />
       </div>
 
@@ -107,23 +135,23 @@ export const GlobalHeader = ({
       <SettingsDialog
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        theme={theme || 'neon'}
-        onThemeChange={onThemeChange || (() => { })}
+        theme={theme}
+        onThemeChange={onThemeChange || (() => {})}
         volume={volume || 0.5}
-        onVolumeChange={onVolumeChange || (() => { })}
+        onVolumeChange={onVolumeChange || (() => {})}
         musicEnabled={musicEnabled || false}
-        onMusicToggle={onMusicToggle || (() => { })}
+        onMusicToggle={onMusicToggle || (() => {})}
         sfxEnabled={sfxEnabled || true}
-        onSfxToggle={onSfxToggle || (() => { })}
+        onSfxToggle={onSfxToggle || (() => {})}
         selectedMusic={selectedMusic || 'synth_wave'}
-        onMusicChange={onMusicChange || (() => { })}
+        onMusicChange={onMusicChange || (() => {})}
         customTracks={customTracks || []}
-        onCustomTrackAdd={onCustomTrackAdd || (() => { })}
-        onCustomTrackDelete={onCustomTrackDelete || (() => { })}
+        onCustomTrackAdd={onCustomTrackAdd || (() => {})}
+        onCustomTrackDelete={onCustomTrackDelete || (() => {})}
         background={background || 'sky'}
-        onBackgroundChange={onBackgroundChange || (() => { })}
+        onBackgroundChange={onBackgroundChange || (() => {})}
         customWallpaperUrl={customWallpaperUrl}
-        onCustomWallpaperChange={onCustomWallpaperChange || (() => { })}
+        onCustomWallpaperChange={onCustomWallpaperChange || (() => {})}
       />
     </>
   );

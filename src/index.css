@@ -30,6 +30,50 @@
   --ring-4: rgba(255, 255, 255, 0.4);
 }
 
+/* Add this to your index.css - Apply theme to body */
+body {
+  background: var(--theme-bg);
+  color: var(--foreground);
+}
+
+/* Make theme variables cascade to all elements */
+.theme-royal,
+.theme-ivory,
+.theme-obsidian,
+.theme-sapphire,
+.theme-rosewood,
+.theme-emerald,
+.theme-platinum,
+.theme-crimson,
+.theme-neon,
+.theme-avalanche,
+.theme-gold,
+.theme-midnight {
+  --theme-bg: var(--theme-bg);
+  --theme-accent: var(--theme-accent);
+  --theme-glow: var(--theme-glow);
+  --primary: var(--primary);
+  --foreground: var(--foreground);
+  --card: var(--card);
+  --border: var(--border);
+}
+
+/* Apply theme to all elements when body has theme class */
+body.theme-royal,
+body.theme-ivory,
+body.theme-obsidian,
+body.theme-sapphire,
+body.theme-rosewood,
+body.theme-emerald,
+body.theme-platinum,
+body.theme-crimson,
+body.theme-neon,
+body.theme-avalanche,
+body.theme-gold,
+body.theme-midnight {
+  background: var(--theme-bg);
+}
+
 /* 🌌 Theme: Neon Space */
 .theme-neon {
   --theme-bg: #020205;
@@ -90,7 +134,133 @@
   --ring-4: rgba(0, 255, 136, 0.3);
 }
 
-/* ☁️ Theme: Ethereal Sky (REMOVED - Now Global) */
+/* ============================================================ */
+/* 👑 CLASSICAL & ELEGANCE THEMES                               */
+/* ============================================================ */
+
+/* 👑 Theme: Royal (Burgundy & Gold) */
+.theme-royal {
+  --theme-bg: #0A0404;
+  --theme-accent: #D4AF37;
+  --theme-glow: rgba(212, 175, 55, 0.4);
+  --primary: 45 80% 52%;
+  --foreground: 45 20% 98%;
+  --card: 0 20% 6%;
+  --border: 45 80% 52% / 0.25;
+  --ring-1: #D4AF37;
+  --ring-2: #8B0000;
+  --ring-3: #D4AF37;
+  --ring-4: rgba(212, 175, 55, 0.3);
+}
+
+/* 🤍 Theme: Ivory (Cream & Gold) */
+.theme-ivory {
+  --theme-bg: #F5F0EB;
+  --theme-accent: #C9A84C;
+  --theme-glow: rgba(201, 168, 76, 0.3);
+  --primary: 45 60% 45%;
+  --foreground: 45 30% 10%;
+  --card: 40 20% 92%;
+  --border: 45 60% 45% / 0.25;
+  --ring-1: #C9A84C;
+  --ring-2: #8B7A3C;
+  --ring-3: #C9A84C;
+  --ring-4: rgba(201, 168, 76, 0.25);
+}
+
+/* 🖤 Theme: Obsidian (Black & Silver) */
+.theme-obsidian {
+  --theme-bg: #0D0D0D;
+  --theme-accent: #C0C0C0;
+  --theme-glow: rgba(192, 192, 192, 0.3);
+  --primary: 0 0% 75%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 8%;
+  --border: 0 0% 75% / 0.2;
+  --ring-1: #C0C0C0;
+  --ring-2: #FFFFFF;
+  --ring-3: #808080;
+  --ring-4: rgba(192, 192, 192, 0.25);
+}
+
+/* 💎 Theme: Sapphire (Deep Blue & Pearl) */
+.theme-sapphire {
+  --theme-bg: #070E1E;
+  --theme-accent: #B8C6DB;
+  --theme-glow: rgba(184, 198, 219, 0.3);
+  --primary: 215 30% 75%;
+  --foreground: 215 20% 98%;
+  --card: 215 30% 8%;
+  --border: 215 30% 75% / 0.2;
+  --ring-1: #B8C6DB;
+  --ring-2: #0F1B3D;
+  --ring-3: #B8C6DB;
+  --ring-4: rgba(184, 198, 219, 0.25);
+}
+
+/* 🌹 Theme: Rosewood (Mahogany & Rose) */
+.theme-rosewood {
+  --theme-bg: #0D0505;
+  --theme-accent: #E8B4B8;
+  --theme-glow: rgba(232, 180, 184, 0.3);
+  --primary: 355 50% 78%;
+  --foreground: 355 20% 98%;
+  --card: 355 30% 6%;
+  --border: 355 50% 78% / 0.2;
+  --ring-1: #E8B4B8;
+  --ring-2: #5C1A1B;
+  --ring-3: #E8B4B8;
+  --ring-4: rgba(232, 180, 184, 0.25);
+}
+
+/* 💚 Theme: Emerald (Deep Green & Gold) */
+.theme-emerald {
+  --theme-bg: #050F0B;
+  --theme-accent: #D4AF37;
+  --theme-glow: rgba(212, 175, 55, 0.3);
+  --primary: 45 80% 52%;
+  --foreground: 150 20% 98%;
+  --card: 150 30% 6%;
+  --border: 45 80% 52% / 0.2;
+  --ring-1: #D4AF37;
+  --ring-2: #0D3B2E;
+  --ring-3: #D4AF37;
+  --ring-4: rgba(212, 175, 55, 0.25);
+}
+
+/* ⭐ Theme: Platinum (Silver & White Luxury) */
+.theme-platinum {
+  --theme-bg: #E8E6E4;
+  --theme-accent: #2D2D2D;
+  --theme-glow: rgba(45, 45, 45, 0.2);
+  --primary: 0 0% 18%;
+  --foreground: 0 0% 10%;
+  --card: 30 10% 90%;
+  --border: 0 0% 18% / 0.2;
+  --ring-1: #2D2D2D;
+  --ring-2: #C0C0C0;
+  --ring-3: #2D2D2D;
+  --ring-4: rgba(45, 45, 45, 0.2);
+}
+
+/* ❤️ Theme: Crimson (Rich Red & Champagne) */
+.theme-crimson {
+  --theme-bg: #0A0404;
+  --theme-accent: #F7E7CE;
+  --theme-glow: rgba(247, 231, 206, 0.3);
+  --primary: 35 70% 85%;
+  --foreground: 35 20% 98%;
+  --card: 0 30% 6%;
+  --border: 35 70% 85% / 0.2;
+  --ring-1: #F7E7CE;
+  --ring-2: #8B1A1A;
+  --ring-3: #F7E7CE;
+  --ring-4: rgba(247, 231, 206, 0.25);
+}
+
+/* ============================================================ */
+/* BASE STYLES                                                  */
+/* ============================================================ */
 
 @layer base {
   * {
@@ -156,8 +326,19 @@
   }
 
   @keyframes dart-flight-scale {
-    0% { transform: scale(3) rotate(0deg); opacity: 0; }
-    20% { transform: scale(2.5) rotate(-10deg); opacity: 1; }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+      transform: scale(3) rotate(0deg);
+      opacity: 0;
+    }
+
+    20% {
+      transform: scale(2.5) rotate(-10deg);
+      opacity: 1;
+    }
+
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
   }
 }
