@@ -17,7 +17,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Volume2, Music, Palette, Upload, Trash2, ImageIcon } from 'lucide-react';
-import { BackgroundMode } from './BackgroundLayer';
+import { BackgroundMode } from './BackgroundLayer'; // ✅ ADD THIS IMPORT
 
 export interface CustomTrack {
     name: string;
@@ -40,7 +40,7 @@ interface SettingsDialogProps {
     customTracks: CustomTrack[];
     onCustomTrackAdd: (track: CustomTrack) => void;
     onCustomTrackDelete: (index: number) => void;
-    background: BackgroundMode;
+    background: BackgroundMode; // ✅ Uses the imported type
     onBackgroundChange: (mode: BackgroundMode) => void;
     customWallpaperUrl?: string;
     onCustomWallpaperChange: (url: string) => void;
@@ -101,14 +101,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate type
         if (file.type !== 'audio/mpeg' && !file.name.toLowerCase().endsWith('.mp3')) {
             alert('Only MP3 files are allowed.');
             e.target.value = '';
             return;
         }
 
-        // Validate duration
         const url = URL.createObjectURL(file);
         const audio = new Audio(url);
         audio.addEventListener('loadedmetadata', () => {
@@ -129,7 +127,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
     };
 
     const handleDeleteCustomTrack = (index: number) => {
-        // If currently playing this track, switch to default
         if (selectedMusic === `custom_${index}`) {
             onMusicChange('synth_wave');
         }
@@ -137,9 +134,16 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
     };
 
     const bgOptions: { id: BackgroundMode; label: string; preview: string }[] = [
+        // ✅ EXISTING - KEEP ALL
         { id: 'sky', label: 'Default Sky', preview: '☁️' },
         { id: 'galaxy', label: 'Galaxy', preview: '🌌' },
         { id: 'globe', label: 'World Map', preview: '🌍' },
+        { id: 'stadium', label: 'Stadium', preview: '🏟️' },
+        // ✅ NEW - ADD THESE
+        { id: 'dartArena', label: 'Dart Arena', preview: '🎯' },
+        { id: 'neonAlley', label: 'Neon Alley', preview: '💜' },
+        { id: 'royalChamber', label: 'Royal Chamber', preview: '👑' },
+        // ✅ EXISTING - KEEP
         { id: 'custom', label: 'Custom Image', preview: '🖼️' },
     ];
 
@@ -303,7 +307,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
                             {musicEnabled && (
                                 <div className="pt-2 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    {/* Built-in track selector */}
                                     <Select value={selectedMusic} onValueChange={onMusicChange}>
                                         <SelectTrigger className="glass-panel border-white/10 text-white h-10 text-[10px] font-mono uppercase tracking-widest">
                                             <div className="flex items-center gap-2">
@@ -320,7 +323,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                                     {track.label}
                                                 </SelectItem>
                                             ))}
-                                            {/* Custom tracks as additional options */}
                                             {customTracks.map((ct, i) => (
                                                 <SelectItem key={`custom_${i}`} value={`custom_${i}`} className="text-[10px] font-mono uppercase tracking-widest focus:text-primary focus:bg-white/5">
                                                     🎵 {ct.name}
@@ -329,14 +331,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                         </SelectContent>
                                     </Select>
 
-                                    {/* Custom music upload section */}
                                     <div className="mt-3 space-y-2">
                                         <div className="flex items-center justify-between">
                                             <span className="text-[9px] font-black text-indigo-950 uppercase tracking-widest">Your Music ({customTracks.length}/2)</span>
                                             <span className="text-[8px] text-slate-600 italic">MP3 only · max 5 min · resets on refresh</span>
                                         </div>
 
-                                        {/* Existing custom tracks */}
                                         {customTracks.map((ct, i) => (
                                             <div
                                                 key={i}
@@ -362,7 +362,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                             </div>
                                         ))}
 
-                                        {/* Upload button (only show if < 2 custom tracks) */}
                                         {customTracks.length < 2 && (
                                             <>
                                                 <button

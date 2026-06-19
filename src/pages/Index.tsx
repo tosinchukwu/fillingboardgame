@@ -5,6 +5,7 @@ import GameLog from '../components/GameLog';
 import MasterScoringTable from '../components/MasterScoringTable';
 import { createInitialGameState, hitNumber, hitRing, GameState, PlayerState, computeCPUMove, passTurnTimeout } from '../game/gameLogic';
 import { RING_NUMBERS, TARGET_SCORE, TOTAL_NUMBERS } from '../game/boardLayout';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
