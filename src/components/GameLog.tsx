@@ -20,8 +20,8 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
   }, [messages]);
 
   return (
-    <div className="h-full w-full">
-      <div className="space-y-1.5">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden pr-1 custom-scrollbar">
+      <div className="space-y-1.5 p-1">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-32 border-2 border-dashed border-white/5 rounded-xl">
             <p className="text-[9px] text-white/20 uppercase tracking-widest font-mono-game animate-pulse">Waiting for throws...</p>
@@ -60,7 +60,7 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
                 className={`text-[10px] sm:text-[10px] font-medium font-mono-game leading-relaxed border-l-2 pl-3 py-1.5 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group break-words whitespace-pre-wrap`}
                 style={isP1 ? { borderColor: colors.accent } : undefined}
               >
-                <span className="opacity-100 group-hover:opacity-100 transition-opacity">{displayMsg}</span>
+                <span>{displayMsg}</span>
               </div>
             );
           })
