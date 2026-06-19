@@ -237,9 +237,6 @@ const RulesScroll = () => (
   </div>
 );
 
-// Add this after your imports, before the Index component
-
-
 const BatchTransitionOverlay = ({ show, scores, players, onClose }: any) => {
   if (!show || !scores) return null;
   return (
@@ -284,7 +281,6 @@ const BatchTransitionOverlay = ({ show, scores, players, onClose }: any) => {
     </div>
   );
 };
-
 
 const Index = () => {
   const navigate = useNavigate();
@@ -1941,8 +1937,6 @@ const Index = () => {
           {/* === ROW 2: PC 3-Column Layout (ONLY on desktop) === */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
 
-
-
             {/* LEFT COLUMN: Game Log + Target Score - WIDER */}
             <div className="flex flex-col h-full gap-4 w-[420px] flex-shrink-0">
               {/* Game Log */}
@@ -2042,7 +2036,6 @@ const Index = () => {
               </div>
             </div>
 
-
             {/* CENTER COLUMN: Dartboard - Slight Left Shift */}
             <div className="flex flex-col items-center justify-center ml-[-20px]">
               <Dartboard
@@ -2076,15 +2069,17 @@ const Index = () => {
             </div>
 
             {/* RIGHT COLUMN: Scoring Table - WIDER */}
-            <div className="flex flex-col h-full flex-1">
-              <div className="flex-1 min-h-0 overflow-hidden">
-                {rightColTab === 'stats' ? (
-                  <MasterScoringTable gameState={gameState} theme={theme} />
-                ) : (
-                  <VerifiedScoreboard />
-                )}
+            <div className="flex flex-col h-full flex-1 min-h-0">
+              <div className="flex-1 min-h-0 relative">
+                <div className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                  {rightColTab === 'stats' ? (
+                    <MasterScoringTable gameState={gameState} theme={theme} />
+                  ) : (
+                    <VerifiedScoreboard />
+                  )}
+                </div>
               </div>
-              <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mt-3">
+              <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mt-3 shrink-0">
                 <button
                   onClick={() => setRightColTab('stats')}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${rightColTab === 'stats' ? 'bg-primary text-white shadow-[0_0_15px_rgba(232,65,66,0.3)]' : 'text-primary hover:text-primary hover:bg-primary/10'}`}
@@ -2101,6 +2096,7 @@ const Index = () => {
                 </button>
               </div>
             </div>
+
           </div>
 
           <BatchTransitionOverlay
@@ -2115,6 +2111,5 @@ const Index = () => {
     </>
   );
 };
-
 
 export default Index;

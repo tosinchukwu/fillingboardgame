@@ -94,10 +94,11 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState, them
 
     return (
         <div
-            className="glass-panel rounded-3xl overflow-hidden border-white/10 shadow-2xl flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-700"
+            className="glass-panel rounded-3xl overflow-hidden border-white/10 shadow-2xl flex flex-col h-full w-full"
             style={{ borderColor: colors.border }}
         >
-            <div className="bg-white/5 p-3 sm:p-4 border-b border-white/10 flex items-center justify-between">
+            {/* Header - fixed */}
+            <div className="bg-white/5 p-3 sm:p-4 border-b border-white/10 flex items-center justify-between shrink-0">
                 <h3 className="text-[10px] sm:text-sm font-black tracking-[0.2em] uppercase text-white flex items-center gap-2 sm:gap-3">
                     <span
                         className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse"
@@ -108,12 +109,12 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState, them
                 <span className="text-[8px] sm:text-[10px] font-mono-game text-white/30 uppercase tracking-widest hidden sm:inline">Strategy Logic Applied</span>
             </div>
 
-            {/* ✅ FIXED: Scroll wrapper with horizontal scroll on mobile */}
-            <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar min-h-0">
                 <div className="min-w-[700px] lg:min-w-0">
                     <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-black/40 text-[8px] sm:text-[9px] uppercase tracking-widest text-white/40 border-b border-white/10">
+                        <thead className="sticky top-0 z-10">
+                            <tr className="bg-black/90 text-[8px] sm:text-[9px] uppercase tracking-widest text-white/40 border-b border-white/10">
                                 <th className="py-2 sm:py-3 px-2 sm:px-3 font-black">Dart No</th>
                                 <th className="py-2 sm:py-3 px-2 sm:px-3 font-black">{gameState.players[0].name.toUpperCase()} (Hit)</th>
                                 <th className="py-2 sm:py-3 px-2 sm:px-3 font-black">{gameState.players[1].name.toUpperCase()} (Hit)</th>
@@ -131,7 +132,8 @@ const MasterScoringTable: React.FC<MasterScoringTableProps> = ({ gameState, them
                 </div>
             </div>
 
-            <div className="bg-black/40 p-3 sm:p-4 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 font-mono-game">
+            {/* Footer - fixed */}
+            <div className="bg-black/40 p-3 sm:p-4 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 font-mono-game shrink-0">
                 <div className="flex flex-col items-center sm:items-start gap-1">
                     <span className="text-[8px] sm:text-[9px] text-white/30 uppercase tracking-widest">Board Status</span>
                     <span
