@@ -331,8 +331,13 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-[420px] glass-panel border-white/20 text-white backdrop-blur-3xl rounded-[2rem] p-8 shadow-2xl"
-        style={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] sm:w-full sm:max-w-[480px] max-h-[90vh] overflow-y-auto glass-panel border-white/20 text-white backdrop-blur-3xl rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 md:p-8 shadow-2xl custom-scrollbar animate-in zoom-in-95 duration-200"
+        style={{
+          backgroundColor: 'rgba(15, 23, 42, 0.96)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+        }}
       >
         <DialogHeader className="mb-6">
           <DialogTitle className="text-2xl font-black italic tracking-tighter text-indigo-400 flex items-center gap-3 drop-shadow-sm">

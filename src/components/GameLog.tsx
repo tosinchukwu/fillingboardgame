@@ -14,7 +14,7 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
 
   return (
     <div
-      className="bg-black/40 border border-white/10 rounded-2xl p-5 max-h-[500px] min-h-[300px] overflow-y-auto shadow-2xl glass-panel custom-scrollbar"
+      className="bg-black/40 border border-white/10 rounded-2xl p-5 max-h-[300px] min-h-[200px] overflow-y-auto shadow-2xl glass-panel custom-scrollbar"
       style={{ borderColor: colors.border }}
     >
       <h4
@@ -58,7 +58,6 @@ const GameLog: React.FC<GameLogProps> = ({ messages, p1Name, p2Name, theme = 'av
             }
 
             return (
-              // ✅ UPDATED: Better mobile readability
               <div
                 key={i}
                 className={`text-[12px] sm:text-[11px] font-medium font-mono-game leading-relaxed border-l-2 pl-4 py-3 sm:py-2 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group`}
