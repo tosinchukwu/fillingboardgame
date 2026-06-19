@@ -1846,6 +1846,7 @@ const Index = () => {
                 </div>
               )}
             </div>
+
             {/* Stats Panel */}
             <div className="w-full">
               <button
@@ -1910,10 +1911,23 @@ const Index = () => {
               )}
             </div>
 
+            {/* 🎯 DARTBOARD - MOBILE (FIXED) */}
+            <div className="w-full flex flex-col items-center justify-center py-2">
+              <div className="w-full max-w-[350px] mx-auto">
+                <Dartboard
+                  gameState={gameState}
+                  onHitNumber={handleHitNumber}
+                  onHitRing={handleHitRing}
+                  disabled={gameState.gameOver}
+                  turnSeconds={turnSeconds}
+                  theme={theme}
+                />
+              </div>
+            </div>
+
             {/* Bottom Buttons on Mobile */}
             {!gameState.isVsCPU && (
               <div className="w-full flex flex-wrap justify-center gap-2 mt-2">
-
                 {makePublic && (
                   <Button
                     variant="outline"
@@ -1933,6 +1947,7 @@ const Index = () => {
               </div>
             )}
           </div>
+
 
           {/* === ROW 2: PC 3-Column Layout (ONLY on desktop) === */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
