@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAccount, useDisconnect, useBalance, useReadContract } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
@@ -62,6 +62,9 @@ export const CircleWalletButton = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [nativeBalance, setNativeBalance] = useState<string>('0.00');
     const [usdcBalance, setUsdcBalance] = useState<string>('0.00');
+
+    // ✅ Add ref for dropdown container
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Get native balance
     const { data: balanceData, refetch: refetchBalance } = useBalance({
@@ -143,6 +146,52 @@ export const CircleWalletButton = () => {
         }
     }, [chainId, address, refetchBalance, refetchUsdcBalance]);
 
+    // ✅ Handle click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        // Add event listener when dropdown is open
+        if (isDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isDropdownOpen]);
+
+    // ✅ Handle Escape key to close dropdown
+    useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && isDropdownOpen) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        if (isDropdownOpen) {
+            document.addEventListener('keydown', handleEscape);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isDropdownOpen]);
+
+    // ✅ Toggle dropdown
+    const toggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen);
+    };
+
+    // ✅ Close dropdown
+    const closeDropdown = () => {
+        setIsDropdownOpen(false);
+    };
+
     if (!isConnected) {
         return (
             <Button
@@ -158,9 +207,9 @@ export const CircleWalletButton = () => {
     }
 
     return (
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
             <Button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onClick={toggleDropdown}
                 className="bg-[#1a1a2e] border border-gray-700 hover:border-gray-500 
                  text-white font-medium rounded-xl transition-all 
                  flex items-center gap-3 h-10 text-xs px-3"
@@ -244,7 +293,7 @@ export const CircleWalletButton = () => {
                             onClick={() => {
                                 navigator.clipboard.writeText(address || '');
                                 toast.success('Address copied to clipboard!');
-                                setIsDropdownOpen(false);
+                                closeDropdown();
                             }}
                             className="w-full text-left px-3 py-2 text-xs text-white/70 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2"
                         >
@@ -257,7 +306,7 @@ export const CircleWalletButton = () => {
                             onClick={() => {
                                 const explorerUrl = `https://etherscan.io/address/${address}`;
                                 window.open(explorerUrl, '_blank');
-                                setIsDropdownOpen(false);
+                                closeDropdown();
                             }}
                             className="w-full text-left px-3 py-2 text-xs text-white/70 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2"
                         >
@@ -281,7 +330,7 @@ export const CircleWalletButton = () => {
                     <button
                         onClick={() => {
                             disconnect();
-                            setIsDropdownOpen(false);
+                            closeDropdown();
                             toast.success("Wallet disconnected");
                         }}
                         className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 

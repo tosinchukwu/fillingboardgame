@@ -271,6 +271,7 @@ const Index = () => {
   const [hitHistory, setHitHistory] = useState<any[]>([]);
   const [rightColTab, setRightColTab] = useState<'stats' | 'history'>('stats');
   const seenGuestsRef = useRef<Set<string>>(new Set());
+  const [isPaused, setIsPaused] = useState(false);
 
   const handleCustomTrackAdd = (track: CustomTrack) => {
     setCustomTracks(prev => [...prev, track]);
@@ -673,6 +674,29 @@ const Index = () => {
     seenGuestsRef.current.clear();
   };
 
+  // ===== PAUSE / RESUME / EXIT CONTROLS =====
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+    if (!isPaused) {
+      toast.info("Game Paused ⏸️", {
+        duration: 2000,
+        description: "Click Resume to continue playing.",
+      });
+    } else {
+      toast.info("Game Resumed ▶️", {
+        duration: 2000,
+        description: "Good luck! 🎯",
+      });
+    }
+  };
+
+  const exitGame = () => {
+    if (confirm("Are you sure you want to exit the game? Progress will be lost.")) {
+      resetGame();
+      toast.info("Game exited successfully");
+    }
+  };
+
   const handleHitNumber = useCallback((num: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
 
@@ -782,12 +806,14 @@ const Index = () => {
   const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
 
   // Determine if timer should be active for the current viewer
+  // Determine if timer should be active for the current viewer
   const timerActive = (() => {
     if (!gameStarted || !gameState || gameState.gameOver) return false;
     if (showBatchOverlay || isDartFlying) return false;
     if (gameState.dartsRemaining <= 0) return false;
     // Skip timer for CPU turns (CPU has its own timing)
     if (gameState.isVsCPU && gameState.currentPlayer === 1) return false;
+    if (isPaused) return false; // ✅ Pause timer when paused
     return true;
   })();
 
@@ -995,12 +1021,12 @@ const Index = () => {
   };
 
 
-
   const getLauncherText = () => {
     if (!gameState) return '';
     if (gameState.gameOver) return 'Game Over';
     if (showBatchOverlay) return 'Next Batch...';
     if (gameState.dartsRemaining <= 0) return 'Turn Ending...';
+    if (isPaused) return '⏸️ Game Paused';
 
     if (gameState.isVsCPU && gameState.currentPlayer === 1) {
       return 'CPU Throwing...';
@@ -1010,6 +1036,17 @@ const Index = () => {
     return (gameState.isVsCPU && gameState.currentPlayer === 0) || (address && gameState.players[gameState.currentPlayer].address.toLowerCase() === address.toLowerCase())
       ? 'Launch Dart'
       : 'Wait Turn';
+  };
+
+  // If this function doesn't exist, add it. If it does, update it.
+  const isLaunchDisabled = () => {
+    if (!gameState || gameState.gameOver) return true;
+    if (showBatchOverlay) return true;
+    if (gameState.dartsRemaining <= 0) return true;
+    if (isPaused) return true; // ✅ Disable launch when paused
+    if (gameState.isVsCPU && gameState.currentPlayer === 1) return true;
+    if (!canIThrow) return true;
+    return false;
   };
 
   const handleCopyMatchId = () => {
@@ -1334,13 +1371,26 @@ const Index = () => {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Room: {inviteCode}</span>
                 {isHost ? (
-                  <Button variant="ghost" onClick={() => {
-                    const link = `${window.location.origin}${window.location.pathname}#invite=${inviteCode}`;
-                    navigator.clipboard.writeText(link);
-                    toast.success("Link copied!");
-                  }} className="h-6 text-[8px] uppercase tracking-widest text-white/30 hover:text-white/60">Copy Link</Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      const link = `${window.location.origin}${window.location.pathname}#invite=${inviteCode}`;
+                      navigator.clipboard.writeText(link);
+                      toast.success("Invite link copied to clipboard! 📋");
+                    }}
+                    className="h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white/80 border border-white/10 rounded-lg transition-all flex items-center gap-1.5"
+                  >
+                    <span>📋</span>
+                    Copy Invite Link
+                  </Button>
                 ) : (
-                  <Button variant="ghost" onClick={() => { setIsLobbyJoined(false); setInviteCode(''); window.location.hash = ""; }} className="h-6 text-[8px] uppercase tracking-widest text-white/30 hover:text-white/60">Leave</Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => { setIsLobbyJoined(false); setInviteCode(''); window.location.hash = ""; }}
+                    className="h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded-lg transition-all"
+                  >
+                    ✕ Leave
+                  </Button>
                 )}
               </div>
 
@@ -1433,18 +1483,6 @@ const Index = () => {
 
         <div className={`h-screen overflow-hidden theme-${theme} p-3 md:p-6 flex flex-col items-center transition-colors duration-700 font-sans`}>
           <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
-          <div className="fixed top-6 left-6 z-50">
-            <a
-              href="https://fillinggame.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 py-2 px-5 rounded-xl transition-all shadow-[0_0_15px_rgba(232,65,66,0.1)]"
-            >
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] hidden sm:inline">Register Match</span>
-              <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px] sm:hidden">Register Match</span>
-            </a>
-          </div>
 
           <div className="flex items-center justify-center min-h-screen p-4">
             <div className="w-full max-w-md space-y-8 text-center glass-panel p-10 rounded-[2rem] neon-border-theme">
@@ -1457,7 +1495,7 @@ const Index = () => {
                     onClick={() => setSetupMode('solo')}
                     className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'solo' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
                   >
-                    Solo Mission
+                    You Vs CPU
                   </button>
                   <button
                     onClick={() => setSetupMode('multi')}
@@ -1469,7 +1507,7 @@ const Index = () => {
                     onClick={() => setSetupMode('invite')}
                     className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${setupMode === 'invite' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
                   >
-                    Invite Link
+                    PvP
                   </button>
                   <button
                     onClick={() => setSetupMode('history')}
@@ -1492,13 +1530,9 @@ const Index = () => {
                 )}
 
                 <div className="flex justify-center gap-3">
-                  <Button onClick={shareGame} variant="ghost" className="bg-white/5 border border-white/10 text-white/80 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10">
-                    <Share2 className="w-3 h-3 text-primary" />
-                    Invite Friend
-                  </Button>
                   <button
                     onClick={() => navigate('/watch')}
-                    className="bg-white/5 border border-white/10 text-white/60 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10 transition-all"
+                    className="bg-white/5 border border-white/10 text-white/80 font-mono-game uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 px-6 py-2 rounded-lg hover:bg-white/10 transition-all"
                   >
                     📺 Watch Live Matches
                   </button>
@@ -1538,17 +1572,7 @@ const Index = () => {
 
       <div className={`min-h-screen theme-${theme} p-3 md:p-6 flex flex-col items-center transition-colors duration-700 font-sans`}>
         <BackgroundLayer mode={background} customUrl={customWallpaperUrl} />
-        <div className="fixed top-3 left-3 z-50">
-          <a
-            href="https://fillinggame.vercel.app/join-match"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 py-2 px-5 rounded-xl transition-all shadow-[0_0_15px_rgba(232,65,66,0.1)]"
-          >
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-primary font-black uppercase tracking-[0.2em] text-[11px]">Register Match</span>
-          </a>
-        </div>
+
 
         {gameState.gameOver && gameState.winner !== null && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto py-8">
@@ -1745,14 +1769,87 @@ const Index = () => {
           </div>
         )}
 
+        {/* ✅ Pause Overlay */}
+        {isPaused && !gameState.gameOver && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="glass-panel p-12 rounded-[3rem] border-2 border-yellow-500/50 text-center space-y-6 max-w-md">
+              <div className="text-7xl mb-4">⏸️</div>
+              <h2 className="text-4xl font-black text-yellow-400 uppercase tracking-wider">Game Paused</h2>
+              <p className="text-white/60 text-sm">Take a break. Click Resume when you're ready to continue.</p>
+              <div className="flex gap-4 justify-center mt-6">
+                <Button
+                  onClick={togglePause}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-black px-8 py-6 text-lg rounded-2xl shadow-xl"
+                >
+                  ▶️ Resume Game
+                </Button>
+                <Button
+                  onClick={exitGame}
+                  variant="outline"
+                  className="border-red-500/50 text-red-400 hover:bg-red-500/10 px-8 py-6 text-lg rounded-2xl"
+                >
+                  ✕ Exit Game
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Top header bar: title + live status, centered above the 3-column layout */}
         <div className="w-full max-w-[1700px] mb-4 px-2 flex flex-col items-center gap-3">
           <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 glass-panel py-2 px-4 rounded-full border-white/10">
-            <span className="font-mono-game text-[10px] tracking-[0.2em] text-primary animate-pulse uppercase">{gameState.players[gameState.currentPlayer].name}'S TURN</span>
-            <div className="h-4 w-[1px] bg-white/10" />
-            <span className="text-white/60 text-[10px] font-mono-game tracking-[0.2em] uppercase">{gameState.dartsRemaining} DARTS REMAINING</span>
-            <Button variant="ghost" size="sm" onClick={resetGame} className="text-[9px] uppercase tracking-widest text-white/40 hover:text-primary h-6 ml-2">New Game</Button>
+          <div className="flex flex-wrap items-center justify-center gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-4 rounded-full shadow-lg">
+            {/* Turn Info */}
+            <span className="font-mono-game text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
+              {gameState.players[gameState.currentPlayer].name}'S TURN
+            </span>
+
+            <div className="h-5 w-[1px] bg-white/20" />
+
+            {/* Darts Remaining */}
+            <span className="text-white/80 text-[11px] font-mono-game tracking-[0.2em] uppercase font-semibold">
+              {gameState.dartsRemaining} DARTS REMAINING
+            </span>
+
+            {/* ✅ Pause Indicator */}
+            {isPaused && (
+              <span className="flex items-center gap-1.5 text-[10px] font-black text-yellow-300 animate-pulse bg-yellow-500/30 px-3 py-1 rounded-full border border-yellow-500/50">
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                PAUSED
+              </span>
+            )}
+
+            <div className="h-5 w-[1px] bg-white/20" />
+
+            {/* ✅ Pause / Resume Button - SOLID BACKGROUND */}
+            <Button
+              size="sm"
+              onClick={togglePause}
+              className={`text-[10px] font-bold uppercase tracking-widest h-7 px-3 rounded-lg transition-all ${isPaused
+                ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'
+                : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/30'
+                }`}
+            >
+              {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+            </Button>
+
+            {/* ✅ Exit Button - SOLID BACKGROUND */}
+            <Button
+              size="sm"
+              onClick={exitGame}
+              className="text-[10px] font-bold uppercase tracking-widest h-7 px-3 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all"
+            >
+              ✕ Exit
+            </Button>
+
+            {/* ✅ New Game Button - SOLID BACKGROUND */}
+            <Button
+              size="sm"
+              onClick={resetGame}
+              className="text-[10px] font-bold uppercase tracking-widest h-7 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 border border-white/10 transition-all"
+            >
+              New Game
+            </Button>
           </div>
         </div>
 
