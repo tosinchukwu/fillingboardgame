@@ -338,6 +338,14 @@ const Index = () => {
     });
   };
 
+  // Auto-scroll game log to bottom when messages change
+  useEffect(() => {
+    const logEnd = document.getElementById('log-end');
+    if (logEnd) {
+      logEnd.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [gameState?.logMessages]);
+
   useEffect(() => {
     const handleImpact = () => setIsDartFlying(false);
     const handleThrow = () => setIsDartFlying(true);
@@ -1932,20 +1940,63 @@ const Index = () => {
             {/* LEFT COLUMN: Game Log + Target Score - WIDER */}
             <div className="flex flex-col h-full gap-4 w-[420px] flex-shrink-0">
               {/* Game Log */}
-              <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full">
+              <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full min-h-0">
                 <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between shrink-0">
                   <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
                   <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 </div>
-                <div className="flex-1 min-h-0">
-                  <GameLog
-                    messages={gameState.logMessages}
-                    p1Name={gameState.players[0].name}
-                    p2Name={gameState.players[1].name}
-                    theme={theme}
-                  />
+                <div className="flex-1 min-h-0 relative">
+                  <div className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <div className="space-y-1.5 p-1">
+                      {gameState.logMessages.length === 0 ? (
+                        <div className="flex items-center justify-center h-32 border-2 border-dashed border-white/5 rounded-xl">
+                          <p className="text-[9px] text-white/20 uppercase tracking-widest font-mono-game animate-pulse">Waiting for throws...</p>
+                        </div>
+                      ) : (
+                        gameState.logMessages.map((msg, i) => {
+                          const isP1 = msg.includes(`[${gameState.players[0].name}]`);
+                          const isP2 = msg.includes(`[${gameState.players[1].name}]`);
+                          const isSystem = msg.includes("[SYSTEM]");
+
+                          let displayMsg = msg;
+                          let bgColor = "bg-white/5";
+                          let textColor = "text-white/80";
+                          let borderColor = "border-white/5";
+
+                          if (isP1) {
+                            textColor = "text-primary";
+                            borderColor = `border-primary/30`;
+                            bgColor = "bg-primary/5";
+                            displayMsg = msg.replace(/\[.*?\]:\s*/, "");
+                          } else if (isP2) {
+                            textColor = "text-red-400";
+                            borderColor = "border-red-500/30";
+                            bgColor = "bg-red-500/5";
+                            displayMsg = msg.replace(/\[.*?\]:\s*/, "");
+                          } else if (isSystem) {
+                            textColor = "text-white";
+                            borderColor = "border-white/20";
+                            bgColor = "bg-white/10";
+                            displayMsg = msg.replace(/\[SYSTEM\]:\s*/, "");
+                          }
+
+                          return (
+                            <div
+                              key={i}
+                              className={`text-[10px] sm:text-[10px] font-medium font-mono-game leading-relaxed border-l-2 pl-3 py-1.5 ${bgColor} rounded-r-xl ${textColor} ${borderColor} transition-all hover:bg-white/10 group break-words whitespace-pre-wrap`}
+                            >
+                              <span>{displayMsg}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                      {/* This empty div at the bottom triggers auto-scroll */}
+                      <div id="log-end" />
+                    </div>
+                  </div>
                 </div>
               </div>
+
               {/* Target Score Display - Same width as Game Log */}
               <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl w-full shrink-0">
                 <div className="flex items-center justify-between mb-2">
