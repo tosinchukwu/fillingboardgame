@@ -325,6 +325,7 @@ const Index = () => {
   // Mobile collapsible panels
   const [isLogExpanded, setIsLogExpanded] = useState(false);
   const [isScoresExpanded, setIsScoresExpanded] = useState(false);
+  const batch2ToastShownRef = useRef<boolean>(false);
 
   const handleCustomTrackAdd = (track: CustomTrack) => {
     setCustomTracks(prev => [...prev, track]);
@@ -722,16 +723,21 @@ const Index = () => {
     seenGuestsRef.current.clear();
     setBackground('sky');
     setCustomWallpaperUrl(undefined);
+    // Reset the toast tracking ref
+    batch2ToastShownRef.current = false;
   };
 
   const rotateBackground = () => {
     setBackground('custom');
     setCustomWallpaperUrl(batch2BackgroundUrl);
     // Toast notification only - no overlay popup
-    toast.info(`🌄 Background changed to Batch 2 Arena!`, {
-      duration: 2000,
-      icon: '🎯',
-    });
+    if (!batch2ToastShownRef.current) {
+      toast.info(`🌄 Background changed to Batch 2 Arena!`, {
+        duration: 2000,
+        icon: '🎯',
+      });
+      batch2ToastShownRef.current = true;
+    }
   };
 
   const togglePause = () => {
