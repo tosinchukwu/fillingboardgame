@@ -691,14 +691,15 @@ const Index = () => {
     setIsLobbyJoined(false);
     setIsHost(false);
     seenGuestsRef.current.clear();
+    // ✅ Reset background to default sky when game resets
+    setBackground('sky');
+    setCustomWallpaperUrl(undefined);
   };
 
   // ===== BACKGROUND ROTATION ON BATCH CHANGE =====
   const rotateBackground = () => {
-    // ✅ Change to custom background when Batch 2 starts
-    // Replace 'my-batch2-bg.jpg' with your actual image name
     setBackground('custom');
-    setCustomWallpaperUrl('/backgrounds/my-batch2-bg.jpg');
+    setCustomWallpaperUrl(batch2BackgroundUrl);
     toast.info(`🎯 Background changed to Batch 2 Arena!`, {
       duration: 2500,
       icon: '🎯',
