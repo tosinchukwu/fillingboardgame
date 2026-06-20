@@ -15,7 +15,7 @@ SELECT cron.schedule(
   $$
     SELECT 
       http_post(
-        'https://fillergamedart.vercel.app/api/cron/verify-results',
+        'https://fillingdartgame.vercel.app/api/cron/verify-results',
         jsonb_build_object('timestamp', now()::text)::text,
         'application/json'
       )
@@ -29,7 +29,7 @@ SELECT cron.schedule(
   $$
     SELECT 
       http_post(
-        'https://fillergamedart.vercel.app/api/cron/distribute-rewards',
+        'https://fillingdartgame.vercel.app/api/cron/distribute-rewards',
         jsonb_build_object('timestamp', now()::text)::text,
         'application/json'
       )
