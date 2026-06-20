@@ -1,68 +1,68 @@
 -- ========================================================================
--- SUPABASE PG_CRON SETUP FOR AUTOMATIC BOT EXECUTION
+-- SUPABASE PG_CRON SETUP - FILLINGDARTGAME
 -- ========================================================================
--- This script enables pg_cron extension in Supabase and schedules
--- your bot functions to run automatically without Vercel Cron limitations
 
--- Step 1: Enable pg_cron and http extensions
+-- Step 1: Enable required extensions
 CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS http;
+CREATE EXTENSION IF NOT EXISTS pg_net;
 
--- Step 2: Verify Results Bot - Runs every 1 minute
+-- Step 2: (Optional but Recommended) Set your CRON_SECRET in Supabase
+-- Run this once:
+-- SELECT set_config('app.cron_secret', 'YOUR_GENERATED_CRON_SECRET_HERE', false);
+
+-- =============================================
+-- VERIFY RESULTS BOT (Every 1 minute)
+-- =============================================
 SELECT cron.schedule(
   'verify-results-bot',
-  '*/1 * * * *',
+  '*/1 * * * *',   -- every minute
   $$
-    SELECT 
-      http_post(
-        'https://fillingdartgame.vercel.app/api/cron/verify-results',
-        jsonb_build_object('timestamp', now()::text)::text,
-        'application/json'
-      )
+    SELECT net.http_post(
+      url := 'https://fillingdartgame.vercel.app/api/cron/verify-results',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-cron-secret', current_setting('app.cron_secret', true)
+      ),
+      body := jsonb_build_object('timestamp', now()::text)
+    ) as request_id;
   $$
 );
 
--- Step 3: Distribute Rewards Bot - Runs every 5 minutes
+-- =============================================
+-- DISTRIBUTE REWARDS BOT (Every 5 minutes)
+-- =============================================
 SELECT cron.schedule(
   'distribute-rewards-bot',
-  '*/5 * * * *',
+  '*/5 * * * *',   -- every 5 minutes
   $$
-    SELECT 
-      http_post(
-        'https://fillingdartgame.vercel.app/api/cron/distribute-rewards',
-        jsonb_build_object('timestamp', now()::text)::text,
-        'application/json'
-      )
+    SELECT net.http_post(
+      url := 'https://fillingdartgame.vercel.app/api/cron/distribute-rewards',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-cron-secret', current_setting('app.cron_secret', true)
+      ),
+      body := jsonb_build_object('timestamp', now()::text)
+    ) as request_id;
   $$
 );
 
--- Step 4: List all scheduled cron jobs
-SELECT 
-  jobid,
-  schedule,
-  command,
-  nodename,
-  database,
-  username,
-  active
-FROM cron.job
-WHERE jobname IN ('verify-results-bot', 'distribute-rewards-bot');
+-- =============================================
+-- MONITORING QUERIES
+-- =============================================
 
--- Step 5: Monitor job execution (view last 20 runs)
--- Run this query to check if jobs are running successfully
+-- View all active cron jobs
 SELECT 
-  jobid,
-  database,
-  username,
-  command,
-  status,
-  return_message,
-  start_time,
-  end_time
-FROM cron.job_run_details
-ORDER BY start_time DESC
+  jobid, jobname, schedule, command, active 
+FROM cron.job 
+WHERE jobname LIKE '%bot%';
+
+-- View last 20 job executions
+SELECT 
+  jobid, 
+  status, 
+  return_message, 
+  start_time, 
+  end_time 
+FROM cron.job_run_details 
+ORDER BY start_time DESC 
 LIMIT 20;
-
--- Step 6: Delete jobs if needed (uncomment to use)
--- SELECT cron.unschedule('verify-results-bot');
--- SELECT cron.unschedule('distribute-rewards-bot');
