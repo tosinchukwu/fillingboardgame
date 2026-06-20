@@ -23,7 +23,7 @@ export const ESCROW_CONTRACT_ADDRESSES = {
   optimismSepolia: '0x',
   bscTestnet: '0x',
   polygonAmoy: '0x',
-  arcTestnet:
+  arcTestnet: 0x,
   // add other chains as needed
 };
 
