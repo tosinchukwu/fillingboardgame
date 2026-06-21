@@ -1,6 +1,10 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+// api/cron/distribute-rewards.ts
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
+
+export const config = {
+  runtime: 'edge',        // Recommended for cron jobs
+};
 
 /**
  * =========================
@@ -14,16 +18,15 @@ const supabase = createClient(
 
 /**
  * =========================
- * CIRCLE CONFIG (SANDBOX W3S)
+ * CIRCLE CONFIG
  * =========================
  */
 const CIRCLE_API_KEY = process.env.CIRCLE_API_KEY!;
-const CIRCLE_API_URL =
-  process.env.CIRCLE_API_URL || 'https://api-sandbox.circle.com/v1/w3s';
+const CIRCLE_API_URL = process.env.CIRCLE_API_URL || 'https://api-sandbox.circle.com/v1/w3s';
 
 /**
  * =========================
- * CIRCLE API HELPER (W3S ONLY)
+ * CIRCLE API HELPER
  * =========================
  */
 async function circleAPI(endpoint: string, method: string = 'POST', data?: any) {
@@ -37,13 +40,9 @@ async function circleAPI(endpoint: string, method: string = 'POST', data?: any) 
       },
       data,
     });
-
     return response.data;
   } catch (error: any) {
-    console.error(
-      `[Circle API Error] ${endpoint}:`,
-      error.response?.data || error.message
-    );
+    console.error(`[Circle API Error] ${endpoint}:`, error.response?.data || error.message);
     throw error;
   }
 }
@@ -53,10 +52,11 @@ async function circleAPI(endpoint: string, method: string = 'POST', data?: any) 
  * MAIN CRON HANDLER
  * =========================
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Cron security
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
+export default async function handler(request: Request): Promise<Response> {
+  // Security Check - CRON_SECRET
+  const authHeader = request.headers.get('authorization') || request.headers.get('x-cron-secret');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && authHeader !== process.env.CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
   try {
@@ -70,14 +70,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) {
       console.error('[Supabase Error]', error);
-      return res.status(500).json({ error: 'DB error' });
+      return new Response(JSON.stringify({ error: 'DB error' }), { status: 500 });
     }
 
     if (!rewards || rewards.length === 0) {
-      return res.status(200).json({
-        message: 'No rewards to distribute',
-        processed: 0,
-      });
+      return new Response(
+        JSON.stringify({
+          message: 'No rewards to distribute',
+          processed: 0,
+        }),
+        { status: 200 }
+      );
     }
 
     let distributed = 0;
@@ -101,23 +104,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    return res.status(200).json({
-      message: 'Done',
-      processed: rewards.length,
-      distributed,
-      failed,
-    });
+    return new Response(
+      JSON.stringify({
+        message: 'Done',
+        processed: rewards.length,
+        distributed,
+        failed,
+      }),
+      { status: 200 }
+    );
   } catch (err: any) {
     console.error('[Cron Error]', err);
-    return res.status(500).json({ error: err.message });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 }
 
-/**
- * =========================
- * DISTRIBUTE REWARD (W3S ONLY)
- * =========================
- */
+/* ==================== Helper Functions (same as before) ==================== */
+
 async function distributeReward(reward: any) {
   console.log(`[Reward] Processing match ${reward.match_id}`);
 
@@ -173,7 +176,7 @@ async function distributeReward(reward: any) {
       : []),
   ]);
 
-  // Update escrow
+  // Update escrow status
   await supabase
     .from('escrow_rewards')
     .update({
@@ -188,11 +191,6 @@ async function distributeReward(reward: any) {
   console.log(`[Reward] Completed ${reward.match_id}`);
 }
 
-/**
- * =========================
- * GET WALLET ID (W3S ONLY)
- * =========================
- */
 async function getSourceWalletId(): Promise<string> {
   if (process.env.CIRCLE_WALLET_ID) {
     return process.env.CIRCLE_WALLET_ID;
