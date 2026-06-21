@@ -97,7 +97,7 @@ export const GlobalHeader = ({
       }}
     >
       <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accentColor }} />
-      <span className="font-black uppercase tracking-[0.15em] text-[10px]" style={{ color: accentColor }}>Register</span>
+      <span className="font-black uppercase tracking-[0.15em] text-[10px]" style={{ color: accentColor }}>Register PVP Matct</span>
     </a>
   );
 
