@@ -1,9 +1,13 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+// api/cron/verify-results.ts
 import { createClient } from '@supabase/supabase-js';
+
+export const config = {
+  runtime: 'edge',
+};
 
 /**
  * =========================
- * SUPABASE (FIXED BACKEND SETUP)
+ * SUPABASE (SERVICE ROLE)
  * =========================
  */
 const supabase = createClient(
@@ -20,17 +24,19 @@ interface MatchResult {
 
 /**
  * =========================
- * CRON HANDLER
+ * MAIN CRON HANDLER
  * =========================
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Cron security check
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
+export default async function handler(request: Request): Promise<Response> {
+  // Security Check - CRON_SECRET
+  const authHeader = request.headers.get('authorization') || request.headers.get('x-cron-secret');
+  
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && authHeader !== process.env.CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
   try {
-    console.log('[Bot] Starting match verification...');
+    console.log('[VerifyBot] Starting match verification...');
 
     const { data: pending, error } = await supabase
       .from('bot_verifications')
@@ -42,16 +48,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
     if (error) {
-      console.error('[Bot] DB error:', error);
-      return res.status(500).json({ error: 'Database error' });
+      console.error('[VerifyBot] DB error:', error);
+      return new Response(JSON.stringify({ error: 'Database error' }), { status: 500 });
     }
 
     if (!pending?.length) {
-      return res.status(200).json({
-        message: 'No matches to verify',
-        checked: 0,
-        verified: 0,
-      });
+      return new Response(
+        JSON.stringify({
+          message: 'No matches to verify',
+          checked: 0,
+          verified: 0,
+        }),
+        { status: 200 }
+      );
     }
 
     let verified = 0;
@@ -60,11 +69,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const item of pending) {
       try {
         const result = await verifyMatch(item.match_id);
-
         if (result.success) verified++;
         else failed++;
       } catch (err) {
-        console.error('[Bot] Failed match:', item.match_id, err);
+        console.error('[VerifyBot] Failed match:', item.match_id, err);
         failed++;
 
         await supabase
@@ -78,16 +86,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    return res.status(200).json({
-      message: 'Verification complete',
-      checked: pending.length,
-      verified,
-      failed,
-    });
+    return new Response(
+      JSON.stringify({
+        message: 'Verification complete',
+        checked: pending.length,
+        verified,
+        failed,
+      }),
+      { status: 200 }
+    );
   } catch (err: any) {
-    return res.status(500).json({
-      error: err.message || 'Unknown error',
-    });
+    console.error('[VerifyBot] Critical Error:', err);
+    return new Response(JSON.stringify({ error: err.message || 'Unknown error' }), { status: 500 });
   }
 }
 
@@ -97,7 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
  * =========================
  */
 async function verifyMatch(matchId: string): Promise<{ success: boolean }> {
-  console.log(`[Bot] Verifying match ${matchId}`);
+  console.log(`[VerifyBot] Verifying match ${matchId}`);
 
   const { data: match, error } = await supabase
     .from('matches')
@@ -111,16 +121,14 @@ async function verifyMatch(matchId: string): Promise<{ success: boolean }> {
 
   const gameState = match.game_state || {};
 
-  const winner =
-    gameState.winner_address || match.lobby_host?.address;
-
-  const runnerUp =
-    gameState.runner_up_address || match.lobby_guest?.address;
+  const winner = gameState.winner_address || match.lobby_host?.address;
+  const runnerUp = gameState.runner_up_address || match.lobby_guest?.address;
 
   if (!winner) {
     throw new Error('No winner found');
   }
 
+  // Check confirmed payments
   const { data: payments } = await supabase
     .from('payments')
     .select('*')
@@ -132,7 +140,7 @@ async function verifyMatch(matchId: string): Promise<{ success: boolean }> {
       .from('bot_verifications')
       .update({
         verification_status: 'failed',
-        error_message: 'No payments found',
+        error_message: 'No confirmed payments found',
         updated_at: new Date().toISOString(),
       })
       .eq('match_id', matchId);
@@ -140,14 +148,12 @@ async function verifyMatch(matchId: string): Promise<{ success: boolean }> {
     return { success: false };
   }
 
-  const total = payments.reduce(
-    (sum, p) => sum + Number(p.amount_usdc),
-    0
-  );
+  const total = payments.reduce((sum, p) => sum + Number(p.amount_usdc), 0);
 
-  const winnerReward = total * 0.6;
-  const runnerReward = total * 0.3;
+  const winnerReward = Math.floor(total * 0.6);
+  const runnerReward = Math.floor(total * 0.3);
 
+  // Insert into escrow_rewards for distribution
   await supabase.from('escrow_rewards').insert({
     match_id: matchId,
     winner_address: winner,
@@ -159,6 +165,7 @@ async function verifyMatch(matchId: string): Promise<{ success: boolean }> {
     verification_time: new Date().toISOString(),
   });
 
+  // Mark as verified
   await supabase
     .from('bot_verifications')
     .update({
@@ -170,6 +177,6 @@ async function verifyMatch(matchId: string): Promise<{ success: boolean }> {
     })
     .eq('match_id', matchId);
 
-  console.log(`[Bot] Match ${matchId} verified`);
+  console.log(`[VerifyBot] Match ${matchId} successfully verified`);
   return { success: true };
 }
