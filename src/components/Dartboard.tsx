@@ -35,11 +35,6 @@ interface Landing {
   hitRingLineIdx: number;
 }
 
-/**
- * Skill-based landing resolver: maps a press→release swipe vector
- * (in SVG viewBox coordinates) to a deterministic landing point and
- * the nearest board element. ≥90% skill, tiny jitter for feel.
- */
 function resolveSwipeLanding(
   pressX: number,
   pressY: number,
@@ -48,28 +43,23 @@ function resolveSwipeLanding(
   withJitter = true
 ): Landing | null {
   const dx = releaseX - pressX;
-  const dy = releaseY - pressY; // negative when swiping up
-  // Reference distances within the 500x500 viewBox
-  const HREF = 120; // upward swipe needed for full power
-  const WREF = 150; // lateral swipe needed for full aim deflection
+  const dy = releaseY - pressY;
+  const HREF = 120;
+  const WREF = 150;
   const power = Math.max(0, Math.min(1, -dy / HREF));
-  if (power < 0.1) return null; // canceled
+  if (power < 0.1) return null;
 
   const aimX = Math.max(-1, Math.min(1, dx / WREF));
 
-  // Map to a target inside the board.
-  // power=1 -> top of board (y ~= CENTER - OUTER_R), power=0.5 -> bullseye, power small -> low.
   let targetX = CENTER + aimX * OUTER_R * 0.95;
   let targetY = CENTER - (power * 2 - 1) * OUTER_R * 0.95;
 
-  // Add micro jitter (~5%) for realism.
   if (withJitter) {
-    const g = () => (Math.random() + Math.random() + Math.random() - 1.5) * 4; // ~gaussian
+    const g = () => (Math.random() + Math.random() + Math.random() - 1.5) * 4;
     targetX += g();
     targetY += g();
   }
 
-  // Clamp inside the outer ring so every dart scores.
   const fromCenterX = targetX - CENTER;
   const fromCenterY = targetY - CENTER;
   let r = Math.hypot(fromCenterX, fromCenterY);
@@ -78,10 +68,8 @@ function resolveSwipeLanding(
   const lx = CENTER + r * Math.cos(theta);
   const ly = CENTER + r * Math.sin(theta);
 
-  // angle in board convention (degrees from top, clockwise)
   const angleDeg = (Math.atan2(fromCenterY, fromCenterX) * 180) / Math.PI + 90;
 
-  // 1) Check ring-line proximity for ring hits.
   let bestRingDist = Infinity;
   let bestRingIdx = -1;
   RING_RADII.forEach((ring, i) => {
@@ -104,7 +92,6 @@ function resolveSwipeLanding(
     };
   }
 
-  // 2) Else nearest gem dot.
   let best = { d: Infinity, num: BOARD_LAYOUT[0].number, ring: BOARD_LAYOUT[0].ring, ang: BOARD_LAYOUT[0].angle };
   BOARD_LAYOUT.forEach((pos) => {
     const [gx, gy] = polarToXY(pos.angle, RING_RADII[pos.ring].outer);
@@ -112,7 +99,6 @@ function resolveSwipeLanding(
     if (d < best.d) best = { d, num: pos.number, ring: pos.ring, ang: pos.angle };
   });
 
-  // Snap landing exactly onto the chosen gem so the stuck dart looks crisp.
   const snapR = RING_RADII[best.ring].outer * 0.85;
   const [snapX, snapY] = polarToXY(best.ang, snapR);
   return {
@@ -126,12 +112,8 @@ function resolveSwipeLanding(
   };
 }
 
-/** Build a release vector that would land near a specific number (used by CPU). */
 function synthesizeSwipeFor(target: { ring: number; angle: number }): { dx: number; dy: number } {
   const [tx, ty] = polarToXY(target.angle, RING_RADII[target.ring].outer);
-  // Solve inverse of resolveSwipeLanding (without jitter):
-  // targetX = CENTER + aimX * OUTER_R * 0.95
-  // targetY = CENTER - (power*2 - 1) * OUTER_R * 0.95
   const aimX = (tx - CENTER) / (OUTER_R * 0.95);
   const power = ((CENTER - ty) / (OUTER_R * 0.95) + 1) / 2;
   return { dx: aimX * 220, dy: -power * 280 };
@@ -140,16 +122,16 @@ function synthesizeSwipeFor(target: { ring: number; angle: number }): { dx: numb
 const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing, disabled, isSpectator = false, turnSeconds = null, theme = 'avalanche' }) => {
   const colors = useTheme(theme);
   const cp = gameState.currentPlayer;
-    // 🔥 Desktop detection for responsive sizing
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  
+  // ============================================================
+  // FIXED: REMOVED isDesktop detection - use consistent sizes
+  // ============================================================
+  // Use fixed sizes that work well on both mobile and PC
+  // The SVG scales to fit its container, so the viewBox handles the scaling
+  const circleRadius = 22; // Fixed size
+  const fontSize = 22; // Fixed size
+  const pulseRadius = 26;
+  const progressRadius = 26;
 
   const [boardPhase, setBoardPhase] = useState<BoardPhase>('idle');
   const [stuckDarts, setStuckDarts] = useState<{ x: number; y: number; angle: number; tilt: number; playerIdx: number } | null>(null);
@@ -158,7 +140,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
   const [hitPulse, setHitPulse] = useState<{ id: string; type: 'number' | 'ring' } | null>(null);
   const [flightDest, setFlightDest] = useState<{ lx: number; ly: number; angle: number; tilt: number } | null>(null);
 
-  // Aim state in SVG viewBox coordinates
   const [aim, setAim] = useState<{ pressX: number; pressY: number; curX: number; curY: number; pointerId: number } | null>(null);
   const [previewLanding, setPreviewLanding] = useState<Landing | null>(null);
 
@@ -168,7 +149,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
   const svgRef = useRef<SVGSVGElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
 
-  // Sync stuck darts from game state (for spectators or joined players)
   useEffect(() => {
     if (dartFlying) return;
     if (gameState?.latestDart !== undefined) {
@@ -184,7 +164,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
   const prevCpRef = useRef(cp);
   useEffect(() => { if (prevCpRef.current !== cp) prevCpRef.current = cp; }, [cp]);
 
-  // Convert client (px) coordinates to SVG viewBox coordinates.
   const clientToSvg = useCallback((clientX: number, clientY: number): { x: number; y: number } => {
     const svg = svgRef.current;
     if (!svg) return { x: CENTER, y: CENTER };
@@ -196,7 +175,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
 
   const flightOriginRef = useRef<{ x: number; y: number }>({ x: CENTER, y: 640 });
 
-  /** Run the flight + hit-resolution pipeline for a given landing. */
   const executeThrow = useCallback((landing: Landing, playerIdx: number, fromX: number, fromY: number) => {
     setBoardPhase('throwing');
     phaseRef.current = 'throwing';
@@ -209,10 +187,8 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     setDartFlying(true);
     setIsLaunched(false);
 
-    // Notify Index for isDartFlying state / audio.
     window.dispatchEvent(new CustomEvent('THROW_DART'));
 
-    // The flight uses CSS transition from (fromX,fromY) to (lx,ly).
     setTimeout(() => setIsLaunched(true), 10);
 
     setTimeout(() => {
@@ -243,8 +219,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     }, 560);
   }, [gameState.dartsRemaining, gameState.closedNumbers, onHitNumber, onHitRing]);
 
-
-  // Pointer handlers
   const canAim = !disabled && !gameState.gameOver && phaseRef.current === 'idle' && !isSpectator && gameState.dartsRemaining > 0;
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -276,7 +250,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     setAim(null);
     setPreviewLanding(null);
     if (!landing) {
-      // canceled — snap back
       setBoardPhase('idle');
       phaseRef.current = 'idle';
       return;
@@ -284,7 +257,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     executeThrow(landing, cp, pressX, pressY);
   }, [aim, clientToSvg, executeThrow, cp]);
 
-  // CPU / remote: animate a synthetic swipe to a known target
   useEffect(() => {
     const handleRemoteHit = (ev: any) => {
       if (phaseRef.current !== 'idle') return;
@@ -296,7 +268,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
       const pressY = 660;
       const landing = resolveSwipeLanding(pressX, pressY, pressX + dx, pressY + dy, false);
       if (!landing) return;
-      // Force the visual stuck dart to use playerIdx from event if provided.
       executeThrow(landing, ev.detail?.playerIdx ?? 1, pressX, pressY);
     };
     window.addEventListener('REMOTE_HIT_ANIMATION' as any, handleRemoteHit);
@@ -311,17 +282,16 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     return 'Swipe up to throw';
   };
 
-  // Dart handle position (in SVG coords) when idle.
   const handleX = CENTER;
   const handleY = 660;
 
-  // While aiming, show the dart at the press point and angled toward swipe direction.
   const aimDx = aim ? aim.curX - aim.pressX : 0;
   const aimDy = aim ? aim.curY - aim.pressY : 0;
   const swipeDist = Math.hypot(aimDx, aimDy);
   const aimAngle = aim && swipeDist > 5
     ? (Math.atan2(aimDx, -aimDy) * 180) / Math.PI
     : 180;
+
   return (
     <div className="relative flex flex-col items-center gap-2 select-none mt-0 pb-36 xl:pb-0 overflow-visible">
       <div
@@ -335,7 +305,8 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
         <svg
           ref={svgRef}
           viewBox="0 0 500 790"
-          className="w-[320px] h-[500px] sm:w-[380px] sm:h-[600px] md:w-[450px] md:h-[711px] overflow-visible"
+          // FIXED: Consistent size for all screens - responsive width, fixed aspect ratio
+          className="w-full max-w-[320px] sm:max-w-[380px] md:max-w-[450px] lg:max-w-[500px] aspect-[500/790] overflow-visible"
           style={{
             filter: 'none',
             cursor: canAim ? (boardPhase === 'aiming' ? 'grabbing' : 'grab') : 'default',
@@ -400,8 +371,8 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             />
           ))}
 
-          {/* ===== FIXED NUMBER RENDERING WITH PC SUPPORT ===== */}
-                    {BOARD_LAYOUT.map((pos) => {
+          {/* ===== FIXED NUMBER RENDERING - CONSISTENT ON ALL SCREENS ===== */}
+          {BOARD_LAYOUT.map((pos) => {
             const ringData = RING_RADII[pos.ring];
             const r = ringData.outer;
             const [x, y] = polarToXY(pos.angle, r);
@@ -409,33 +380,24 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             const playerHits = gameState.hitSequences[pos.number].filter((p) => p === cp).length;
             const isHit = playerHits > 0;
             const hitProgress = Math.min(playerHits / pos.number, 1);
-            
-            // Responsive sizes based on desktop/mobile
-            const circleRadius = isDesktop ? 24 : 21;
-            const fontSize = isDesktop ? 24 : 20;
-            const pulseRadius = isDesktop ? 28 : 24;
-            const progressRadius = isDesktop ? 28 : 24;
 
             return (
               <g key={pos.number}>
-                {/* MAIN NUMBER CIRCLE - FIXED FOR PC */}
+                {/* MAIN NUMBER CIRCLE - Consistent sizes */}
                 <circle
                   cx={x}
                   cy={y}
-                  
                   r={hitPulse?.id === `num-${pos.number}` ? pulseRadius : circleRadius}
                   fill={isClosed ? '#333' : (pos.color === 'red' ? 'url(#ruby-grad)' : 'url(#emerald-grad)')}
                   stroke={isClosed ? '#555' : (pos.color === 'red' ? '#8B0000' : '#006400')}
-                  strokeWidth={isDesktop ? '2.5' : '2'}
+                  strokeWidth="2.5"
                   className={hitPulse?.id === `num-${pos.number}` ? 'animate-pulse' : ''}
                   style={{
                     transition: 'all 0.2s ease-out',
-                    // PC FIX: Solid color fallback when gradient fails
+                    // PC FIX: Solid color fallback for older browsers
                     backgroundColor: isClosed ? '#333' : (pos.color === 'red' ? '#e63946' : '#2a9d8f'),
-                    // Force GPU rendering on PC
                     WebkitTransform: 'translateZ(0)',
                     transform: 'translateZ(0)',
-                    // Ensure visibility
                     opacity: 1,
                   }}
                 />
@@ -447,7 +409,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                     r={progressRadius}
                     fill="none"
                     stroke={pos.color === 'red' ? '#e63946' : '#2a9d8f'}
-                    strokeWidth={isDesktop ? '4' : '3.5'}
+                    strokeWidth="4"
                     strokeDasharray={`${hitProgress * (2 * Math.PI * progressRadius)} ${2 * Math.PI * progressRadius}`}
                     transform={`rotate(-90 ${x} ${y})`}
                     strokeLinecap="round"
@@ -455,7 +417,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                   />
                 )}
 
-                {/* NUMBER TEXT */}
+                {/* NUMBER TEXT - Consistent font size */}
                 <text
                   x={x}
                   y={y + 1}
@@ -471,7 +433,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                       : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0,0,0,0.3)',
                     paintOrder: 'stroke fill',
                     stroke: isClosed ? 'none' : 'rgba(0,0,0,0.5)',
-                    strokeWidth: isDesktop ? '1.5px' : '1px',
+                    strokeWidth: '1.5px',
                     letterSpacing: '0.5px',
                     fontVariantNumeric: 'tabular-nums',
                     textRendering: 'geometricPrecision',
@@ -484,8 +446,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               </g>
             );
           })}
-          {/* ===== END FIXED NUMBER RENDERING ===== */}
-
+          {/* ===== END NUMBER RENDERING ===== */}
 
           {/* Stuck Darts */}
           {stuckDarts && (
@@ -502,7 +463,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             </g>
           )}
 
-          {/* Flying dart: animates from press point to landing */}
+          {/* Flying dart */}
           {dartFlying && flightDest && (
             <g
               pointerEvents="none"
@@ -527,14 +488,13 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             </g>
           )}
 
-          {/* Idle / aim dart "handle" */}
+          {/* Idle / aim dart */}
           {!dartFlying && !gameState.gameOver && (canAim || aim) && (
             <g
               pointerEvents={canAim ? "all" : "none"}
               style={{ transition: 'opacity 0.2s', cursor: canAim ? 'grab' : 'default' }}
               onPointerDown={onPointerDown}
             >
-
               <rect
                 x={(aim ? aim.curX : handleX) - 40}
                 y={(aim ? aim.curY : handleY) - 150}
@@ -557,7 +517,8 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               />
             </g>
           )}
-          {/* Hint text below dart */}
+          
+          {/* Hint text */}
           {!dartFlying && (
             <text
               x={handleX}
@@ -573,7 +534,8 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               {getHint().toUpperCase()}
             </text>
           )}
-          {/* Turn countdown timer below hint */}
+          
+          {/* Timer */}
           {!dartFlying && turnSeconds !== null && turnSeconds !== undefined && (
             <text
               x={handleX}
@@ -591,12 +553,11 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
           )}
         </svg>
       </div>
-
     </div>
   );
 };
 
-// Legacy export kept for backwards compatibility; no longer used in the main game UI.
+// Legacy export
 export const DartArrow: React.FC<{
   boardPhase: string;
   isFlying: boolean;
