@@ -391,7 +391,6 @@ const Index = () => {
     );
   }
 
-const [isAutoJoining, setIsAutoJoining] = useState(false);
   
   // ===== AUTO-LOAD MATCH FROM URL PARAMETERS =====
   useEffect(() => {
