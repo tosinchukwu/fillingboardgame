@@ -1290,16 +1290,27 @@ const Index = () => {
               <p className="text-[9px] text-white/40 italic text-center font-medium mt-2">
                 {(contractMatch as any).player1Paid && (contractMatch as any).player2Paid
                   ? "Match details verified. Confirm your entry below."
-                  : "Waiting for both commanders to join via fillinggame.vercel.app"}
-              </p>
-              {(contractMatch as any).player1Paid && (contractMatch as any).player2Paid && (
-                <Button
-                  onClick={startGame}
-                  className="w-full h-12 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 animate-in zoom-in-50 duration-500"
-                >
-                  🛸 Confirm & Enter Game
-                </Button>
-              )}
+                  : "Waiting for both commanders to join via https://fillingdartentry.vercel.app/"}
+              <p className="text-[9px] text-white/40 italic text-center font-medium mt-2">
+  {isMatchValid ? (
+    ((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) ? (
+      "Match fully verified. Official/Paid mode enabled."
+    ) : (
+      "Valid match ID confirmed. Casual play enabled — no payment required."
+    )
+  ) : (
+    "Waiting for valid match data..."
+  )}
+</p>
+
+{isMatchValid && (
+  <Button
+    onClick={startGame}
+    className="w-full h-12 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 animate-in zoom-in-50 duration-500"
+  >
+    🛸 Enter Game
+  </Button>
+)}
             </div>
           ) : (
             <div className="py-6 text-center">
