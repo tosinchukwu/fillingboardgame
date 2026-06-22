@@ -322,8 +322,7 @@ const Index = () => {
   const [isLogExpanded, setIsLogExpanded] = useState(false);
   const [isScoresExpanded, setIsScoresExpanded] = useState(false);
   const batch2ToastShownRef = useRef<boolean>(false);
-
-const [isAutoJoining, setIsAutoJoining] = useState(false);
+  const [isAutoJoining, setIsAutoJoining] = useState(false);
   
   // ===== AUTO-LOAD MATCH FROM URL PARAMETERS =====
   useEffect(() => {
