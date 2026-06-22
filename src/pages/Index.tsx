@@ -327,6 +327,7 @@ const Index = () => {
   const batch2ToastShownRef = useRef<boolean>(false);
   const [isAutoJoining, setIsAutoJoining] = useState(false);
   const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
+  const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   // ============================================================
   // 2. ALL wagmi HOOKS
@@ -359,6 +360,11 @@ const Index = () => {
       return undefined;
     }
   })();
+
+  const activeSyncId = (() => {
+  if (setupMode === 'invite') return inviteCode;
+  return String(parsedMatchId || '');
+})();
 
   // ============================================================
   // 5. ALL useReadContract HOOKS
@@ -617,11 +623,6 @@ const Index = () => {
     return () => window.removeEventListener('hashchange', handleHashSync);
   }, []);
 
-  // Supabase sync
-  const activeSyncId = (() => {
-    if (setupMode === 'invite') return inviteCode;
-    return String(parsedMatchId || '');
-  })();
 
   useEffect(() => {
     if (!activeSyncId || (setupMode === 'solo' && !matchId)) return;
@@ -967,8 +968,6 @@ const Index = () => {
   // ============================================================
   // 10. COMPONENT LOGIC (functions and variables)
   // ============================================================
-
-  const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   const isMatchValid = contractMatch && (contractMatch as any).id !== 0n;
 
