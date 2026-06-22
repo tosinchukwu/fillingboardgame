@@ -322,11 +322,78 @@ const Index = () => {
   const [isLogExpanded, setIsLogExpanded] = useState(false);
   const [isScoresExpanded, setIsScoresExpanded] = useState(false);
   const batch2ToastShownRef = useRef<boolean>(false);
+  const [isAutoJoining, setIsAutoJoining] = useState(false);
+  
+  // ===== AUTO-LOAD MATCH FROM URL PARAMETERS =====
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const matchIdFromUrl = urlParams.get('matchId');
+    
+    if (mode === 'pvp' && matchIdFromUrl) {
+        console.log('🔍 Auto-loading match from URL:', matchIdFromUrl);
+      
+      // Show loading state
+      setIsAutoJoining(true);
+      
+      // Set the mode to 'multi' (Private Match)
+      setSetupMode('multi');
+      
+      // Set the match ID
+      setMatchId(matchIdFromUrl);
+      // Set the mode to 'multi' (Private Match)
+      setSetupMode('multi');
+      
+      // Set the match ID
+      setMatchId(matchIdFromUrl);
+      
+      // Auto-join the lobby after a short delay
+      setTimeout(() => {
+        const cleanId = parseMatchId(matchIdFromUrl);
+        if (isValidMatchId(cleanId)) {
+          setMatchId(cleanId);
+          setIsLobbyJoined(true);
+          
+          toast.success(`🎯 Match ${matchIdFromUrl} loaded!`, {
+            duration: 3000,
+            icon: '🎯',
+          });
+        } else {
+          toast.error("Invalid match ID format", {
+            duration: 3000,
+          });
+        }
+      }, 500);
+      
+      // Clear the URL parameters so they don't cause issues on refresh
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []); // Empty dependency array - runs once on mount
+
+  // ===== LOADING UI =====
+  if (isAutoJoining) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-2xl">🎯</span>
+            </div>
+          </div>
+          <p className="text-white text-xl font-bold">Loading Your Match</p>
+          <p className="text-white/40 text-sm">Please wait while we prepare your game...</p>
+          <div className="w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: '60%' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleCustomTrackAdd = (track: CustomTrack) => {
     setCustomTracks(prev => [...prev, track]);
   };
-
   const handleCustomTrackDelete = (index: number) => {
     setCustomTracks(prev => {
       const removed = prev[index];
@@ -334,6 +401,7 @@ const Index = () => {
       return prev.filter((_, i) => i !== index);
     });
   };
+
 
   // Auto-scroll game log to bottom when messages change
   useEffect(() => {
