@@ -1187,141 +1187,136 @@ const Index = () => {
     }
 
     if (setupMode === 'multi') {
-      if (!isLobbyJoined) {
-        return (
-          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="space-y-1 text-left">
-              <label className="text-[10px] uppercase tracking-widest text-white/30 font-black ml-1">Secure Match ID</label>
-              <Input
-                value={matchId}
-                onChange={(e) => setMatchId(e.target.value)}
-                placeholder="Enter the ID provided by your opponent"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/10 h-12 rounded-xl focus:border-primary/50"
-              />
+  if (!isLobbyJoined) {
+    return (
+      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="space-y-1 text-left">
+          <label className="text-[10px] uppercase tracking-widest text-white/30 font-black ml-1">Secure Match ID</label>
+          <Input
+            value={matchId}
+            onChange={(e) => setMatchId(e.target.value)}
+            placeholder="Enter the ID provided by your opponent"
+            className="bg-white/5 border-white/10 text-white placeholder:text-white/10 h-12 rounded-xl focus:border-primary/50"
+          />
+        </div>
+        <Button
+          onClick={() => {
+            if (!isConnected) {
+              open();
+            } else if (matchId) {
+              const cleanId = parseMatchId(matchId);
+              if (isValidMatchId(cleanId)) {
+                setMatchId(cleanId);
+                setIsLobbyJoined(true);
+              } else {
+                toast.error("Invalid Match ID format. Must be numeric digits (e.g., 1748456789)");
+              }
+            }
+          }}
+          disabled={isConnected && !matchId}
+          className="w-full h-12 bg-primary/20 text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-primary/30 hover:bg-primary/30 transition-all"
+        >
+          {isConnected ? '📡 Join Private Lobby' : '🔌 Connect Wallet (Passkeys & Smart Wallets Supported)'}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 p-6 bg-white/5 border border-white/10 rounded-2xl animate-in zoom-in-95 duration-300">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Match Lobby: {matchId}</span>
+        <Button variant="ghost" onClick={() => { setIsLobbyJoined(false); setMatchId(''); }} className="h-6 text-[8px] uppercase tracking-widest text-white/30 hover:text-white/60">Change ID</Button>
+      </div>
+      
+      {isLoadingMatch ? (
+        <div className="flex flex-col items-center py-8 gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="text-[10px] text-white/40 uppercase tracking-widest">Verifying Match Data...</span>
+        </div>
+      ) : matchError ? (
+        <div className="py-6 text-center">
+          <XCircle className="w-8 h-8 text-red-500/50 mx-auto mb-2" />
+          <p className="text-[8px] text-red-400/60 mt-2 px-4 italic font-bold">Details: {matchError.message ? matchError.message.slice(0, 150) : 'Unknown Error'}</p>
+          <p className="text-[8px] text-white/30 mt-2 italic">Ensure you are connected to Avalanche C-Chain.</p>
+        </div>
+      ) : isMatchValid ? (
+        <div className="space-y-3">
+          {address &&
+            address.toLowerCase() !== (contractMatch as any).player1.toLowerCase() &&
+            address.toLowerCase() !== (contractMatch as any).player2.toLowerCase() && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2 flex items-center gap-3">
+                <XCircle className="w-4 h-4 text-red-500" />
+                <span className="text-[10px] text-red-200">Unauthorized: Your wallet is not a participant in this match.</span>
+              </div>
+            )}
+          
+          <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player1Paid) ? 'border-primary/40' : 'border-white/5'}`}>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player1Name || 'Commander A'}</span>
+              <span className="text-[8px] text-white/20">{(contractMatch as any).player1.slice(0, 10)}...</span>
             </div>
+            <div className="flex items-center gap-2">
+              {(contractMatch as any).player1Paid ? (
+                <>
+                  <span className="text-[10px] text-primary font-bold">READY</span>
+                  <CheckCircle2 className="w-3 h-3 text-primary" />
+                </>
+              ) : (
+                <>
+                  <span className="text-[10px] text-white/30">PENDING</span>
+                  <Loader2 className="w-3 h-3 animate-spin text-white/20" />
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player2Paid) ? 'border-primary/40' : 'border-white/5'}`}>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player2Name || 'Commander B'}</span>
+              <span className="text-[8px] text-white/20">{(contractMatch as any).player2.slice(0, 10)}...</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {(contractMatch as any).player2Paid ? (
+                <>
+                  <span className="text-[10px] text-primary font-bold">READY</span>
+                  <CheckCircle2 className="w-3 h-3 text-primary" />
+                </>
+              ) : (
+                <>
+                  <span className="text-[10px] text-white/30">PENDING</span>
+                  <Loader2 className="w-3 h-3 animate-spin text-white/20" />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Single status message - removed duplicate */}
+          <p className="text-[9px] text-white/40 italic text-center font-medium mt-2">
+            {((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) 
+              ? "Match fully verified. Official/Paid mode enabled."
+              : "Waiting for both commanders to join via https://fillingdartentry.vercel.app/"}
+          </p>
+
+          {/* Enter Game button - only show if both players are ready */}
+          {((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) && (
             <Button
-              onClick={() => {
-                if (!isConnected) {
-                  open();
-                } else if (matchId) {
-                  const cleanId = parseMatchId(matchId);
-                  if (isValidMatchId(cleanId)) {
-                    setMatchId(cleanId);
-                    setIsLobbyJoined(true);
-                  } else {
-                    toast.error("Invalid Match ID format. Must be numeric digits (e.g., 1748456789)");
-                  }
-                }
-              }}
-              disabled={isConnected && !matchId}
-              className="w-full h-12 bg-primary/20 text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-primary/30 hover:bg-primary/30 transition-all"
+              onClick={startGame}
+              className="w-full h-12 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 animate-in zoom-in-50 duration-500"
             >
-              {isConnected ? '📡 Join Private Lobby' : '🔌 Connect Wallet (Passkeys & Smart Wallets Supported)'}
+              🛸 Enter Game
             </Button>
-          </div>
-        );
-      }
-
-      return (
-        <div className="space-y-4 p-6 bg-white/5 border border-white/10 rounded-2xl animate-in zoom-in-95 duration-300">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Match Lobby: {matchId}</span>
-            <Button variant="ghost" onClick={() => { setIsLobbyJoined(false); setMatchId(''); }} className="h-6 text-[8px] uppercase tracking-widest text-white/30 hover:text-white/60">Change ID</Button>
-          </div>
-          {isLoadingMatch ? (
-            <div className="flex flex-col items-center py-8 gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <span className="text-[10px] text-white/40 uppercase tracking-widest">Verifying Match Data...</span>
-            </div>
-          ) : matchError ? (
-            <div className="py-6 text-center">
-              <XCircle className="w-8 h-8 text-red-500/50 mx-auto mb-2" />
-              <p className="text-[8px] text-red-400/60 mt-2 px-4 italic font-bold">Details: {matchError.message ? matchError.message.slice(0, 150) : 'Unknown Error'}</p>
-              <p className="text-[8px] text-white/30 mt-2 italic">Ensure you are connected to Avalanche C-Chain.</p>
-            </div>
-          ) : isMatchValid ? (
-            <div className="space-y-3">
-              {address &&
-                address.toLowerCase() !== (contractMatch as any).player1.toLowerCase() &&
-                address.toLowerCase() !== (contractMatch as any).player2.toLowerCase() && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2 flex items-center gap-3">
-                    <XCircle className="w-4 h-4 text-red-500" />
-                    <span className="text-[10px] text-red-200">Unauthorized: Your wallet is not a participant in this match.</span>
-                  </div>
-                )}
-              <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player1Paid) ? 'border-primary/40' : 'border-white/5'}`}>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player1Name || 'Commander A'}</span>
-                  <span className="text-[8px] text-white/20">{(contractMatch as any).player1.slice(0, 10)}...</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {(contractMatch as any).player1Paid ? (
-                    <>
-                      <span className="text-[10px] text-primary font-bold">READY</span>
-                      <CheckCircle2 className="w-3 h-3 text-primary" />
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[10px] text-white/30">PENDING</span>
-                      <Loader2 className="w-3 h-3 animate-spin text-white/20" />
-                    </>
-                  )}
-                </div>
-              </div>
-              <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player2Paid) ? 'border-primary/40' : 'border-white/5'}`}>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player2Name || 'Commander B'}</span>
-                  <span className="text-[8px] text-white/20">{(contractMatch as any).player2.slice(0, 10)}...</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {(contractMatch as any).player2Paid ? (
-                    <>
-                      <span className="text-[10px] text-primary font-bold">READY</span>
-                      <CheckCircle2 className="w-3 h-3 text-primary" />
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[10px] text-white/30">PENDING</span>
-                      <Loader2 className="w-3 h-3 animate-spin text-white/20" />
-                    </>
-                  )}
-                </div>
-              </div>
-              <p className="text-[9px] text-white/40 italic text-center font-medium mt-2">
-                {(contractMatch as any).player1Paid && (contractMatch as any).player2Paid
-                  ? "Match details verified. Confirm your entry below."
-                  : "Waiting for both commanders to join via https://fillingdartentry.vercel.app/"}
-              <p className="text-[9px] text-white/40 italic text-center font-medium mt-2">
-  {isMatchValid ? (
-    ((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) ? (
-      "Match fully verified. Official/Paid mode enabled."
-    ) : (
-      "Valid match ID confirmed. Casual play enabled — no payment required."
-    )
-  ) : (
-    "Waiting for valid match data..."
-  )}
-</p>
-
-{isMatchValid && (
-  <Button
-    onClick={startGame}
-    className="w-full h-12 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 animate-in zoom-in-50 duration-500"
-  >
-    🛸 Enter Game
-  </Button>
-)}
-            </div>
-          ) : (
-            <div className="py-6 text-center">
-              <XCircle className="w-8 h-8 text-red-500/50 mx-auto mb-2" />
-              <span className="text-[10px] text-white/60 uppercase">Match ID Not Found</span>
-            </div>
           )}
         </div>
-      );
-    }
-
+      ) : (
+        <div className="py-6 text-center">
+          <XCircle className="w-8 h-8 text-red-500/50 mx-auto mb-2" />
+          <span className="text-[10px] text-white/60 uppercase">Match ID Not Found</span>
+        </div>
+      )}
+    </div>
+  );
+}
     if (setupMode === 'invite') {
       return (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
