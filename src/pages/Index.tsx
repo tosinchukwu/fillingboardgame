@@ -284,6 +284,10 @@ const BatchTransitionOverlay = ({ show, scores, players, onClose }: any) => {
 
 const Index = () => {
   const navigate = useNavigate();
+
+  // ============================================================
+  // 1. ALL useState HOOKS FIRST
+  // ============================================================
   const [theme, setTheme] = useState<'neon' | 'avalanche' | 'gold' | 'midnight' | 'royal' | 'ivory' | 'obsidian' | 'sapphire' | 'rosewood' | 'emerald' | 'platinum' | 'crimson'>('neon');
   const [gameStarted, setGameStarted] = useState(false);
   const [p1Name, setP1Name] = useState('');
@@ -318,214 +322,35 @@ const Index = () => {
   const seenGuestsRef = useRef<Set<string>>(new Set());
   const [isPaused, setIsPaused] = useState(false);
   const [batch2BackgroundUrl, setBatch2BackgroundUrl] = useState<string>('/backgrounds/dart-arena.jpg');
-  // Mobile collapsible panels
   const [isLogExpanded, setIsLogExpanded] = useState(false);
   const [isScoresExpanded, setIsScoresExpanded] = useState(false);
   const batch2ToastShownRef = useRef<boolean>(false);
   const [isAutoJoining, setIsAutoJoining] = useState(false);
-  
-  // ===== AUTO-LOAD MATCH FROM URL PARAMETERS =====
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
-    const matchIdFromUrl = urlParams.get('matchId');
-    
-    if (mode === 'pvp' && matchIdFromUrl) {
-        console.log('🔍 Auto-loading match from URL:', matchIdFromUrl);
-      
-      // Show loading state
-      setIsAutoJoining(true);
-      
-      // Set the mode to 'multi' (Private Match)
-      setSetupMode('multi');
-      
-      // Set the match ID
-      setMatchId(matchIdFromUrl);
-      // Set the mode to 'multi' (Private Match)
-      setSetupMode('multi');
-      
-      // Set the match ID
-      setMatchId(matchIdFromUrl);
-      
-      // Auto-join the lobby after a short delay
-      setTimeout(() => {
-        const cleanId = parseMatchId(matchIdFromUrl);
-        if (isValidMatchId(cleanId)) {
-          setMatchId(cleanId);
-          setIsLobbyJoined(true);
-          
-          toast.success(`🎯 Match ${matchIdFromUrl} loaded!`, {
-            duration: 3000,
-            icon: '🎯',
-          });
-        } else {
-          toast.error("Invalid match ID format", {
-            duration: 3000,
-          });
-        }
-      }, 500);
-      
-      // Clear the URL parameters so they don't cause issues on refresh
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []); // Empty dependency array - runs once on mount
+  const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
 
-  // ===== LOADING UI =====
-  if (isAutoJoining) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-slate-900">
-        <div className="text-center space-y-4">
-          <div className="relative">
-            <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl">🎯</span>
-            </div>
-          </div>
-          <p className="text-white text-xl font-bold">Loading Your Match</p>
-          <p className="text-white/40 text-sm">Please wait while we prepare your game...</p>
-          <div className="w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
-            <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: '60%' }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  
-  // ===== AUTO-LOAD MATCH FROM URL PARAMETERS =====
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
-    const matchIdFromUrl = urlParams.get('matchId');
-    
-    if (mode === 'pvp' && matchIdFromUrl) {
-        console.log('🔍 Auto-loading match from URL:', matchIdFromUrl);
-      
-      // Show loading state
-      setIsAutoJoining(true);
-      
-      // Set the mode to 'multi' (Private Match)
-      setSetupMode('multi');
-      
-      // Set the match ID
-      setMatchId(matchIdFromUrl);
-      // Set the mode to 'multi' (Private Match)
-      setSetupMode('multi');
-      
-      // Set the match ID
-      setMatchId(matchIdFromUrl);
-      
-      // Auto-join the lobby after a short delay
-      setTimeout(() => {
-        const cleanId = parseMatchId(matchIdFromUrl);
-        if (isValidMatchId(cleanId)) {
-          setMatchId(cleanId);
-          setIsLobbyJoined(true);
-          
-          toast.success(`🎯 Match ${matchIdFromUrl} loaded!`, {
-            duration: 3000,
-            icon: '🎯',
-          });
-        } else {
-          toast.error("Invalid match ID format", {
-            duration: 3000,
-          });
-        }
-      }, 500);
-      
-      // Clear the URL parameters so they don't cause issues on refresh
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []); // Empty dependency array - runs once on mount
-
-  // ===== LOADING UI =====
-  if (isAutoJoining) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-slate-900">
-        <div className="text-center space-y-4">
-          <div className="relative">
-            <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl">🎯</span>
-            </div>
-          </div>
-          <p className="text-white text-xl font-bold">Loading Your Match</p>
-          <p className="text-white/40 text-sm">Please wait while we prepare your game...</p>
-          <div className="w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
-            <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: '60%' }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  const handleCustomTrackAdd = (track: CustomTrack) => {
-    setCustomTracks(prev => [...prev, track]);
-  };
-  const handleCustomTrackDelete = (index: number) => {
-    setCustomTracks(prev => {
-      const removed = prev[index];
-      if (removed) URL.revokeObjectURL(removed.url);
-      return prev.filter((_, i) => i !== index);
-    });
-  };
-
-
-  // Auto-scroll game log to bottom when messages change
-  useEffect(() => {
-    const logEnd = document.getElementById('log-end');
-    if (logEnd) {
-      logEnd.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [gameState?.logMessages]);
-
-  useEffect(() => {
-    const handleImpact = () => setIsDartFlying(false);
-    const handleThrow = () => setIsDartFlying(true);
-    window.addEventListener('DART_HIT_IMPACT', handleImpact);
-    window.addEventListener('THROW_DART', handleThrow);
-    return () => {
-      window.removeEventListener('DART_HIT_IMPACT', handleImpact);
-      window.removeEventListener('THROW_DART', handleThrow);
-    };
-  }, []);
-
-  // ✅ Theme Effect for Global Styling
-  useEffect(() => {
-    document.body.className = `theme-${theme}`;
-    return () => {
-      document.body.className = '';
-    };
-  }, [theme]);
-
-  // ===== DETECT BATCH CHANGE AND ROTATE BACKGROUND =====
-  useEffect(() => {
-    if (gameState && gameState.batch === 2 && gameState.batch1Scores !== null) {
-      rotateBackground();
-    }
-  }, [gameState?.batch, gameState?.batch1Scores]);
-
+  // ============================================================
+  // 2. ALL wagmi HOOKS
+  // ============================================================
   const { address, isConnected, chain } = useAccount();
+  const { open } = useWeb3Modal();
+  const { disconnect } = useDisconnect();
 
-  // ===== DETECT WALLET DISCONNECT =====
-  useEffect(() => {
-    // If wallet disconnects during a game, return to landing page
-    if (!isConnected && gameStarted) {
-      resetGame();
-      toast.info("Wallet disconnected. Returning to main menu.", {
-        duration: 3000,
-        icon: "🔌",
-      });
-    }
-  }, [isConnected, gameStarted]);
+  // ============================================================
+  // 3. ALL useRef HOOKS
+  // ============================================================
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+  const prevBatchRef = useRef<number>(1);
+  const cpuActionBuffer = useRef<string[]>([]);
+  const cpuTurnTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cpuAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ============================================================
+  // 4. COMPUTED VALUES (before hooks that depend on them)
+  // ============================================================
   const activeChainId = chain?.id || SUPPORTED_CHAINS[0].id;
   const activeContractAddress = CONTRACT_ADDRESS_MAP[activeChainId] || CONTRACT_ADDRESS_MAP[SUPPORTED_CHAINS[0].id];
   const activeVerifierAddress = VERIFIER_ADDRESS_MAP[activeChainId] || VERIFIER_ADDRESS_MAP[SUPPORTED_CHAINS[0].id];
   const switchboardReady = isSwitchboardConfigured(activeChainId);
-
-  const { open } = useWeb3Modal();
-  const { disconnect } = useDisconnect();
-  const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   const parsedMatchId = (() => {
     try {
@@ -535,6 +360,9 @@ const Index = () => {
     }
   })();
 
+  // ============================================================
+  // 5. ALL useReadContract HOOKS
+  // ============================================================
   const { data: contractMatch, refetch: refetchMatch, isLoading: isLoadingMatch, error: matchError } = useReadContract({
     address: activeContractAddress as `0x${string}`,
     abi: CONTRACT_ABI,
@@ -546,12 +374,215 @@ const Index = () => {
     }
   });
 
+  const { data: verificationGameCount, refetch: refetchGameCount } = useReadContract({
+    address: activeVerifierAddress as `0x${string}`,
+    abi: VERIFIER_CONTRACT_ABI,
+    functionName: 'getGameCount',
+    query: {
+      enabled: false,
+    }
+  });
+
+  // ============================================================
+  // 6. ALL useWriteContract and useWaitForTransactionReceipt HOOKS
+  // ============================================================
+  const { writeContract, data: hash, isPending: isBroadcasting } = useWriteContract();
+  const { isLoading: isWaitingForTx, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
+
+  // ============================================================
+  // 7. ALL useCallback HOOKS
+  // ============================================================
+  const playSFX = useCallback((type: 'throw' | 'hit') => {
+    if (!sfxEnabled) return;
+    const audio = new Audio(AUDIO_ASSETS[type]);
+    audio.volume = volume;
+    audio.play().catch(e => console.error("SFX failed", e));
+  }, [sfxEnabled, volume]);
+
+  const broadcastGameState = useCallback(async (state: GameState) => {
+    if (!activeSyncId || (setupMode !== 'multi' && setupMode !== 'invite') || isVsCPU) return;
+    if (state.gameOver && setupMode === 'invite' && inviteCode) {
+      try {
+        await supabase.from('matches').update({ status: 'finished' }).eq('match_id', inviteCode);
+      } catch { /* non-critical */ }
+    }
+    try {
+      const serializedState = {
+        ...state,
+        theme,
+        latestDart: state.latestDart || null,
+        closedNumbers: Array.from(state.closedNumbers)
+      };
+      let error;
+      if (setupMode === 'multi') {
+        const res = await supabase
+          .from('matches')
+          .upsert({
+            match_id: activeSyncId,
+            game_state: serializedState,
+            status: 'active',
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'match_id' });
+        error = res.error;
+      } else {
+        const res = await supabase
+          .from('matches')
+          .update({
+            game_state: serializedState,
+            updated_at: new Date().toISOString()
+          })
+          .eq('match_id', activeSyncId);
+        error = res.error;
+      }
+      if (error) {
+        console.error("Broadcast error:", error);
+      }
+    } catch (e) {
+      console.error("Sync broadcast failed:", e);
+    }
+  }, [setupMode, activeSyncId, isVsCPU, theme]);
+
+  const handleHitNumber = useCallback((num: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
+    if (!gameState || gameState.gameOver) return;
+    const result = hitNumber(gameState, num);
+    const updatedState = result.state;
+    updatedState.theme = theme;
+    if (dartPos) {
+      updatedState.latestDart = { ...dartPos, playerIdx: gameState.currentPlayer };
+    }
+    if (updatedState.gameOver) {
+      updatedState.latestDart = null;
+    }
+    if (updatedState.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
+    prevBatchRef.current = updatedState.batch;
+    setGameState(updatedState);
+    setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: num, type: 'number' }]);
+    broadcastGameState(updatedState);
+  }, [gameState, broadcastGameState, theme]);
+
+  const handleHitRing = useCallback((ringIdx: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
+    if (!gameState || gameState.gameOver) return;
+    const nums = RING_NUMBERS[ringIdx];
+    const result = hitRing(gameState, ringIdx, nums);
+    const updatedState = result.state;
+    updatedState.theme = theme;
+    if (dartPos) {
+      updatedState.latestDart = { ...dartPos, playerIdx: gameState.currentPlayer };
+    }
+    if (updatedState.gameOver) {
+      updatedState.latestDart = null;
+    }
+    if (updatedState.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
+    prevBatchRef.current = updatedState.batch;
+    setGameState(updatedState);
+    setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: ringIdx, type: 'ring' }]);
+    broadcastGameState(updatedState);
+  }, [gameState, broadcastGameState, theme]);
+
+  const handleCustomTrackAdd = useCallback((track: CustomTrack) => {
+    setCustomTracks(prev => [...prev, track]);
+  }, []);
+
+  const handleCustomTrackDelete = useCallback((index: number) => {
+    setCustomTracks(prev => {
+      const removed = prev[index];
+      if (removed) URL.revokeObjectURL(removed.url);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  // ============================================================
+  // 8. ALL useEffect HOOKS (in order of dependency)
+  // ============================================================
+
+  // Auto-load match from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const matchIdFromUrl = urlParams.get('matchId');
+    
+    if (mode === 'pvp' && matchIdFromUrl) {
+      console.log('🔍 Auto-loading match from URL:', matchIdFromUrl);
+      
+      setIsAutoJoining(true);
+      setSetupMode('multi');
+      setMatchId(matchIdFromUrl);
+      
+      setTimeout(() => {
+        const cleanId = parseMatchId(matchIdFromUrl);
+        if (isValidMatchId(cleanId)) {
+          setMatchId(cleanId);
+          setIsLobbyJoined(true);
+          toast.success(`🎯 Match ${matchIdFromUrl} loaded!`, {
+            duration: 3000,
+            icon: '🎯',
+          });
+        } else {
+          toast.error("Invalid match ID format", {
+            duration: 3000,
+          });
+        }
+        setIsAutoJoining(false);
+      }, 500);
+      
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Auto-scroll game log to bottom when messages change
+  useEffect(() => {
+    const logEnd = document.getElementById('log-end');
+    if (logEnd) {
+      logEnd.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [gameState?.logMessages]);
+
+  // Dart flying event listeners
+  useEffect(() => {
+    const handleImpact = () => setIsDartFlying(false);
+    const handleThrow = () => setIsDartFlying(true);
+    window.addEventListener('DART_HIT_IMPACT', handleImpact);
+    window.addEventListener('THROW_DART', handleThrow);
+    return () => {
+      window.removeEventListener('DART_HIT_IMPACT', handleImpact);
+      window.removeEventListener('THROW_DART', handleThrow);
+    };
+  }, []);
+
+  // Theme Effect for Global Styling
+  useEffect(() => {
+    document.body.className = `theme-${theme}`;
+    return () => {
+      document.body.className = '';
+    };
+  }, [theme]);
+
+  // Detect batch change and rotate background
+  useEffect(() => {
+    if (gameState && gameState.batch === 2 && gameState.batch1Scores !== null) {
+      rotateBackground();
+    }
+  }, [gameState?.batch, gameState?.batch1Scores]);
+
+  // Detect wallet disconnect
+  useEffect(() => {
+    if (!isConnected && gameStarted) {
+      resetGame();
+      toast.info("Wallet disconnected. Returning to main menu.", {
+        duration: 3000,
+        icon: "🔌",
+      });
+    }
+  }, [isConnected, gameStarted]);
+
+  // Match error logging
   useEffect(() => {
     if (matchError) {
       console.error("Match Lookup Error:", matchError);
     }
   }, [matchError]);
 
+  // Hash sync handler
   useEffect(() => {
     const handleHashSync = () => {
       const hash = window.location.hash;
@@ -586,47 +617,7 @@ const Index = () => {
     return () => window.removeEventListener('hashchange', handleHashSync);
   }, []);
 
-  const isMatchValid = contractMatch && (contractMatch as any).id !== 0n;
-
-  const musicRef = useRef<HTMLAudioElement | null>(null);
-  const prevBatchRef = useRef<number>(1);
-
-  // ===== UPDATED startGame FUNCTION =====
-  const startGame = () => {
-    if (!contractMatch) return;
-    const m = contractMatch as any;
-    setIsVsCPU(false);
-    
-    // Check if it's competitive mode (both players paid)
-    const isCompetitive = m.player1Paid && m.player2Paid;
-    
-    // Create initial state with mode flag
-    const initialState = createInitialGameState(
-      m.player1Name || 'Player 1',
-      m.player1,
-      m.player2Name || 'Player 2',
-      m.player2,
-      false,
-      isCompetitive // Pass mode flag
-    );
-    
-    // Add mode metadata to the state
-    initialState.mode = isCompetitive ? 'competitive' : 'casual';
-    initialState.isCompetitive = isCompetitive;
-    
-    setGameState(initialState);
-    setGameStarted(true);
-    
-    // Broadcast with mode information
-    broadcastGameState({
-      ...initialState,
-      mode: isCompetitive ? 'competitive' : 'casual',
-      matchId: matchId,
-      player1Paid: m.player1Paid,
-      player2Paid: m.player2Paid
-    });
-  };
-
+  // Supabase sync
   const activeSyncId = (() => {
     if (setupMode === 'invite') return inviteCode;
     return String(parsedMatchId || '');
@@ -736,49 +727,7 @@ const Index = () => {
     };
   }, [setupMode, activeSyncId]);
 
-  const broadcastGameState = useCallback(async (state: GameState) => {
-    if (!activeSyncId || (setupMode !== 'multi' && setupMode !== 'invite') || isVsCPU) return;
-    if (state.gameOver && setupMode === 'invite' && inviteCode) {
-      try {
-        await supabase.from('matches').update({ status: 'finished' }).eq('match_id', inviteCode);
-      } catch { /* non-critical */ }
-    }
-    try {
-      const serializedState = {
-        ...state,
-        theme,
-        latestDart: state.latestDart || null,
-        closedNumbers: Array.from(state.closedNumbers)
-      };
-      let error;
-      if (setupMode === 'multi') {
-        const res = await supabase
-          .from('matches')
-          .upsert({
-            match_id: activeSyncId,
-            game_state: serializedState,
-            status: 'active',
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'match_id' });
-        error = res.error;
-      } else {
-        const res = await supabase
-          .from('matches')
-          .update({
-            game_state: serializedState,
-            updated_at: new Date().toISOString()
-          })
-          .eq('match_id', activeSyncId);
-        error = res.error;
-      }
-      if (error) {
-        console.error("Broadcast error:", error);
-      }
-    } catch (e) {
-      console.error("Sync broadcast failed:", e);
-    }
-  }, [setupMode, activeSyncId, isVsCPU, theme]);
-
+  // Heartbeat
   useEffect(() => {
     if (!gameStarted || !isHost || !activeSyncId || setupMode === 'solo') return;
     const interval = setInterval(async () => {
@@ -802,6 +751,7 @@ const Index = () => {
     };
   }, [gameStarted, isHost, setupMode, activeSyncId]);
 
+  // Audio unlock
   useEffect(() => {
     const unlockAudio = () => {
       if (musicRef.current && musicEnabled && gameStarted && musicRef.current.paused) {
@@ -813,6 +763,7 @@ const Index = () => {
     return () => window.removeEventListener('click', unlockAudio);
   }, [musicEnabled, gameStarted]);
 
+  // Music
   useEffect(() => {
     if (musicEnabled && gameStarted) {
       let src: string | undefined;
@@ -836,13 +787,7 @@ const Index = () => {
     }
   }, [musicEnabled, gameStarted, selectedMusic, volume, customTracks]);
 
-  const playSFX = useCallback((type: 'throw' | 'hit') => {
-    if (!sfxEnabled) return;
-    const audio = new Audio(AUDIO_ASSETS[type]);
-    audio.volume = volume;
-    audio.play().catch(e => console.error("SFX failed", e));
-  }, [sfxEnabled, volume]);
-
+  // SFX
   useEffect(() => {
     const handleThrow = () => playSFX('throw');
     const handleHit = () => playSFX('hit');
@@ -854,107 +799,7 @@ const Index = () => {
     };
   }, [playSFX]);
 
-  const startSoloGame = () => {
-    setIsVsCPU(true);
-    const player1Name = p1Name.trim() || (isConnected && address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Guest Player');
-    const player1Address = isConnected && address ? address : '0x0000000000000000000000000000000000000001';
-    const initialState = createInitialGameState(player1Name, player1Address, 'Computer AI (CPU)', '0x0000000000000000000000000000000000000000', true);
-    setGameState(initialState);
-    setGameStarted(true);
-  };
-
-  const resetGame = () => {
-    setGameStarted(false);
-    setGameState(null);
-    setShowBatchOverlay(false);
-    prevBatchRef.current = 1;
-    setMatchId('');
-    setInviteCode('');
-    setIsLobbyJoined(false);
-    setIsHost(false);
-    seenGuestsRef.current.clear();
-    setBackground('sky');
-    setCustomWallpaperUrl(undefined);
-    // Reset the toast tracking ref
-    batch2ToastShownRef.current = false;
-  };
-
-  const rotateBackground = () => {
-    setBackground('custom');
-    setCustomWallpaperUrl(batch2BackgroundUrl);
-    // Toast notification only - no overlay popup
-    if (!batch2ToastShownRef.current) {
-      toast.info(`🌄 Background changed to Batch 2 Arena!`, {
-        duration: 2000,
-        icon: '🎯',
-      });
-      batch2ToastShownRef.current = true;
-    }
-  };
-
-  const togglePause = () => {
-    setIsPaused(!isPaused);
-    if (!isPaused) {
-      toast.info("Game Paused ⏸️", {
-        duration: 2000,
-        description: "Click Resume to continue playing.",
-      });
-    } else {
-      toast.info("Game Resumed ▶️", {
-        duration: 2000,
-        description: "Good luck! 🎯",
-      });
-    }
-  };
-
-  const exitGame = () => {
-    if (confirm("Are you sure you want to exit the game? Progress will be lost.")) {
-      resetGame();
-      toast.info("Game exited successfully");
-    }
-  };
-
-  const handleHitNumber = useCallback((num: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
-    if (!gameState || gameState.gameOver) return;
-    const result = hitNumber(gameState, num);
-    const updatedState = result.state;
-    updatedState.theme = theme;
-    if (dartPos) {
-      updatedState.latestDart = { ...dartPos, playerIdx: gameState.currentPlayer };
-    }
-    if (updatedState.gameOver) {
-      updatedState.latestDart = null;
-    }
-    if (updatedState.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
-    prevBatchRef.current = updatedState.batch;
-    setGameState(updatedState);
-    setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: num, type: 'number' }]);
-    broadcastGameState(updatedState);
-  }, [gameState, broadcastGameState, theme]);
-
-  const handleHitRing = useCallback((ringIdx: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
-    if (!gameState || gameState.gameOver) return;
-    const nums = RING_NUMBERS[ringIdx];
-    const result = hitRing(gameState, ringIdx, nums);
-    const updatedState = result.state;
-    updatedState.theme = theme;
-    if (dartPos) {
-      updatedState.latestDart = { ...dartPos, playerIdx: gameState.currentPlayer };
-    }
-    if (updatedState.gameOver) {
-      updatedState.latestDart = null;
-    }
-    if (updatedState.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
-    prevBatchRef.current = updatedState.batch;
-    setGameState(updatedState);
-    setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: ringIdx, type: 'ring' }]);
-    broadcastGameState(updatedState);
-  }, [gameState, broadcastGameState, theme]);
-
-  const cpuActionBuffer = useRef<string[]>([]);
-  const cpuTurnTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const cpuAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  // CPU turn
   useEffect(() => {
     if (
       gameStarted &&
@@ -996,9 +841,7 @@ const Index = () => {
     };
   }, [gameStarted, gameState, showBatchOverlay, isDartFlying]);
 
-  const TURN_SECONDS = 30;
-  const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
-
+  // Turn timer
   const timerActive = (() => {
     if (!gameStarted || !gameState || gameState.gameOver) return false;
     if (showBatchOverlay || isDartFlying) return false;
@@ -1013,12 +856,8 @@ const Index = () => {
       setTurnSeconds(null);
       return;
     }
-    setTurnSeconds(TURN_SECONDS);
-  }, [
-    timerActive,
-    gameState?.currentPlayer,
-    gameState?.dartsRemaining,
-  ]);
+    setTurnSeconds(30);
+  }, [timerActive, gameState?.currentPlayer, gameState?.dartsRemaining]);
 
   useEffect(() => {
     if (!timerActive || turnSeconds === null) return;
@@ -1036,6 +875,191 @@ const Index = () => {
     broadcastGameState(updated);
     setTurnSeconds(null);
   }, [turnSeconds, timerActive]);
+
+  // Transaction success toast
+  useEffect(() => {
+    if (isTxSuccess) {
+      toast.success("Score broadcasted successfully!", {
+        description: `Transaction hash: ${hash?.slice(0, 10)}...`
+      });
+    }
+  }, [isTxSuccess, hash]);
+
+  // Verification poll
+  useEffect(() => {
+    if (hash && verificationRequestId === '') {
+      setVerificationRequestId(hash);
+      const pollInterval = setInterval(async () => {
+        try {
+          const result = await refetchGameCount();
+          if (result.data && Number(result.data) > 0) {
+            setVerificationComplete(true);
+            clearInterval(pollInterval);
+            toast.success('🎉 Score successfully recorded on-chain!');
+          }
+        } catch (error) {
+          console.error("Polling error:", error);
+        }
+      }, 5000);
+      return () => clearInterval(pollInterval);
+    }
+  }, [hash, verificationRequestId, refetchGameCount]);
+
+  // Invite lobby guest detection
+  useEffect(() => {
+    if (!isHost || !inviteCode) return;
+    const channel = supabase
+      .channel(`invite-lobby-${inviteCode}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'matches', filter: `match_id=eq.${inviteCode}` },
+        (payload) => {
+          const row = payload.new as any;
+          if (row.lobby_guest) {
+            try {
+              const guest = typeof row.lobby_guest === 'string'
+                ? JSON.parse(row.lobby_guest)
+                : row.lobby_guest;
+              if (guest.name && guest.address) {
+                const guestKey = `${inviteCode}-${guest.address}`;
+                if (!seenGuestsRef.current.has(guestKey)) {
+                  setP2Name(guest.name);
+                  setP2Address(guest.address);
+                  toast.success(`${guest.name} has joined the lobby!`);
+                  seenGuestsRef.current.add(guestKey);
+                }
+              }
+            } catch (e) {
+              console.error('Failed to parse guest info:', e);
+            }
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [isHost, inviteCode]);
+
+  // ============================================================
+  // 9. NOW CONDITIONAL RETURNS (after ALL hooks)
+  // ============================================================
+
+  // Loading UI for auto-joining
+  if (isAutoJoining) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-2xl">🎯</span>
+            </div>
+          </div>
+          <p className="text-white text-xl font-bold">Loading Your Match</p>
+          <p className="text-white/40 text-sm">Please wait while we prepare your game...</p>
+          <div className="w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: '60%' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // 10. COMPONENT LOGIC (functions and variables)
+  // ============================================================
+
+  const [supabaseConnected, setSupabaseConnected] = useState(false);
+
+  const isMatchValid = contractMatch && (contractMatch as any).id !== 0n;
+
+  const startGame = () => {
+    if (!contractMatch) return;
+    const m = contractMatch as any;
+    setIsVsCPU(false);
+    
+    const isCompetitive = m.player1Paid && m.player2Paid;
+    
+    const initialState = createInitialGameState(
+      m.player1Name || 'Player 1',
+      m.player1,
+      m.player2Name || 'Player 2',
+      m.player2,
+      false,
+      isCompetitive
+    );
+    
+    initialState.mode = isCompetitive ? 'competitive' : 'casual';
+    initialState.isCompetitive = isCompetitive;
+    
+    setGameState(initialState);
+    setGameStarted(true);
+    
+    broadcastGameState({
+      ...initialState,
+      mode: isCompetitive ? 'competitive' : 'casual',
+      matchId: matchId,
+      player1Paid: m.player1Paid,
+      player2Paid: m.player2Paid
+    });
+  };
+
+  const startSoloGame = () => {
+    setIsVsCPU(true);
+    const player1Name = p1Name.trim() || (isConnected && address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Guest Player');
+    const player1Address = isConnected && address ? address : '0x0000000000000000000000000000000000000001';
+    const initialState = createInitialGameState(player1Name, player1Address, 'Computer AI (CPU)', '0x0000000000000000000000000000000000000000', true);
+    setGameState(initialState);
+    setGameStarted(true);
+  };
+
+  const resetGame = () => {
+    setGameStarted(false);
+    setGameState(null);
+    setShowBatchOverlay(false);
+    prevBatchRef.current = 1;
+    setMatchId('');
+    setInviteCode('');
+    setIsLobbyJoined(false);
+    setIsHost(false);
+    seenGuestsRef.current.clear();
+    setBackground('sky');
+    setCustomWallpaperUrl(undefined);
+    batch2ToastShownRef.current = false;
+  };
+
+  const rotateBackground = () => {
+    setBackground('custom');
+    setCustomWallpaperUrl(batch2BackgroundUrl);
+    if (!batch2ToastShownRef.current) {
+      toast.info(`🌄 Background changed to Batch 2 Arena!`, {
+        duration: 2000,
+        icon: '🎯',
+      });
+      batch2ToastShownRef.current = true;
+    }
+  };
+
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+    if (!isPaused) {
+      toast.info("Game Paused ⏸️", {
+        duration: 2000,
+        description: "Click Resume to continue playing.",
+      });
+    } else {
+      toast.info("Game Resumed ▶️", {
+        duration: 2000,
+        description: "Good luck! 🎯",
+      });
+    }
+  };
+
+  const exitGame = () => {
+    if (confirm("Are you sure you want to exit the game? Progress will be lost.")) {
+      resetGame();
+      toast.info("Game exited successfully");
+    }
+  };
 
   const canIThrow = (() => {
     if (!gameState || gameState.gameOver || gameState.dartsRemaining <= 0 || showBatchOverlay) return false;
@@ -1130,39 +1154,6 @@ const Index = () => {
     }
   };
 
-  useEffect(() => {
-    if (!isHost || !inviteCode) return;
-    const channel = supabase
-      .channel(`invite-lobby-${inviteCode}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'matches', filter: `match_id=eq.${inviteCode}` },
-        (payload) => {
-          const row = payload.new as any;
-          if (row.lobby_guest) {
-            try {
-              const guest = typeof row.lobby_guest === 'string'
-                ? JSON.parse(row.lobby_guest)
-                : row.lobby_guest;
-              if (guest.name && guest.address) {
-                const guestKey = `${inviteCode}-${guest.address}`;
-                if (!seenGuestsRef.current.has(guestKey)) {
-                  setP2Name(guest.name);
-                  setP2Address(guest.address);
-                  toast.success(`${guest.name} has joined the lobby!`);
-                  seenGuestsRef.current.add(guestKey);
-                }
-              }
-            } catch (e) {
-              console.error('Failed to parse guest info:', e);
-            }
-          }
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [isHost, inviteCode]);
-
   const startInviteMatch = () => {
     if (!isHost || !inviteCode || !p2Name || !p2Address) {
       toast.error("Waiting for opponent to connect...");
@@ -1252,45 +1243,6 @@ const Index = () => {
     }
   };
 
-  const { writeContract, data: hash, isPending: isBroadcasting } = useWriteContract();
-  const { isLoading: isWaitingForTx, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
-
-  useEffect(() => {
-    if (isTxSuccess) {
-      toast.success("Score broadcasted successfully!", {
-        description: `Transaction hash: ${hash?.slice(0, 10)}...`
-      });
-    }
-  }, [isTxSuccess, hash]);
-
-  const { data: verificationGameCount, refetch: refetchGameCount } = useReadContract({
-    address: activeVerifierAddress as `0x${string}`,
-    abi: VERIFIER_CONTRACT_ABI,
-    functionName: 'getGameCount',
-    query: {
-      enabled: false,
-    }
-  });
-
-  useEffect(() => {
-    if (hash && verificationRequestId === '') {
-      setVerificationRequestId(hash);
-      const pollInterval = setInterval(async () => {
-        try {
-          const result = await refetchGameCount();
-          if (result.data && Number(result.data) > 0) {
-            setVerificationComplete(true);
-            clearInterval(pollInterval);
-            toast.success('🎉 Score successfully recorded on-chain!');
-          }
-        } catch (error) {
-          console.error("Polling error:", error);
-        }
-      }, 5000);
-      return () => clearInterval(pollInterval);
-    }
-  }, [hash, verificationRequestId, refetchGameCount]);
-
   const broadcastScore = async () => {
     if (!gameState || !gameState.gameOver || gameState.winner === null) {
       toast.error("Game is not over yet!");
@@ -1327,6 +1279,9 @@ const Index = () => {
     }
   };
 
+  // ============================================================
+  // 11. renderSetupContent FUNCTION
+  // ============================================================
   const renderSetupContent = () => {
     if (setupMode === 'solo') {
       return (
@@ -1407,7 +1362,6 @@ const Index = () => {
                   </div>
                 )}
               
-              {/* Player 1 Status */}
               <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player1Paid) ? 'border-primary/40' : 'border-white/5'}`}>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player1Name || 'Commander A'}</span>
@@ -1428,7 +1382,6 @@ const Index = () => {
                 </div>
               </div>
               
-              {/* Player 2 Status */}
               <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player2Paid) ? 'border-primary/40' : 'border-white/5'}`}>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player2Name || 'Commander B'}</span>
@@ -1449,7 +1402,6 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Status Message - Handles both Casual and Competitive */}
               <p className="text-[9px] text-white/40 italic text-center font-medium mt-2">
                 {((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) ? (
                   "🏆 Match fully verified. Competitive mode enabled — rewards at stake!"
@@ -1458,7 +1410,6 @@ const Index = () => {
                 )}
               </p>
 
-              {/* Mode Badge */}
               <div className="flex justify-center">
                 <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
                   ((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) 
@@ -1471,7 +1422,6 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Enter Game Button - Always visible for both modes */}
               <Button
                 onClick={startGame}
                 className={`w-full h-12 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 animate-in zoom-in-50 duration-500 ${
@@ -1619,6 +1569,10 @@ const Index = () => {
     return null;
   };
 
+  // ============================================================
+  // 12. RENDER - LANDING PAGE
+  // ============================================================
+
   if (!gameStarted || !gameState) {
     return (
       <>
@@ -1714,6 +1668,10 @@ const Index = () => {
       </>
     );
   }
+
+  // ============================================================
+  // 13. RENDER - GAME PAGE
+  // ============================================================
 
   return (
     <>
@@ -1994,7 +1952,6 @@ const Index = () => {
         </div>
 
         {/* ===== MOBILE-FIRST LAYOUT ===== */}
-        {/* ===== GAME LAYOUT ===== */}
         <div className="w-full max-w-[1700px] flex flex-col gap-4 sm:gap-6 pb-10">
 
           {/* === ROW 1: Mobile Collapsible Panels (ONLY on mobile) === */}
@@ -2038,7 +1995,6 @@ const Index = () => {
                 </div>
               )}
             </div>
-
 
             {/* Stats Panel - Collapsible with fixed height and scroll */}
             <div className="w-full">
@@ -2112,7 +2068,6 @@ const Index = () => {
               )}
             </div>
 
-
             {/* 🎯 DARTBOARD - MOBILE */}
             <div className="w-full flex flex-col items-center justify-center py-2">
               <div className="w-full max-w-[350px] mx-auto">
@@ -2126,7 +2081,6 @@ const Index = () => {
                 />
               </div>
             </div>
-
 
             {/* Bottom Buttons on Mobile */}
             {!gameState.isVsCPU && (
@@ -2150,7 +2104,6 @@ const Index = () => {
               </div>
             )}
           </div>
-
 
           {/* === ROW 2: PC 3-Column Layout (ONLY on desktop) === */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
@@ -2208,7 +2161,6 @@ const Index = () => {
                           );
                         })
                       )}
-                      {/* This empty div at the bottom triggers auto-scroll */}
                       <div id="log-end" />
                     </div>
                   </div>
