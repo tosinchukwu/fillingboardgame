@@ -123,11 +123,11 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
   const colors = useTheme(theme);
   const cp = gameState.currentPlayer;
   
-  // FIXED: Larger, more visible circles for ALL devices
-  const circleRadius = 26;  // Increased from 22
-  const fontSize = 24;      // Increased from 22
-  const pulseRadius = 32;   // Increased from 26
-  const progressRadius = 32; // Increased from 26
+  // Consistent sizes for all devices
+  const circleRadius = 22;
+  const fontSize = 22;
+  const pulseRadius = 26;
+  const progressRadius = 26;
 
   const [boardPhase, setBoardPhase] = useState<BoardPhase>('idle');
   const [stuckDarts, setStuckDarts] = useState<{ x: number; y: number; angle: number; tilt: number; playerIdx: number } | null>(null);
@@ -135,7 +135,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
   const [isLaunched, setIsLaunched] = useState(false);
   const [hitPulse, setHitPulse] = useState<{ id: string; type: 'number' | 'ring' } | null>(null);
   const [flightDest, setFlightDest] = useState<{ lx: number; ly: number; angle: number; tilt: number } | null>(null);
-  const [toastShown, setToastShown] = useState(false);
 
   const [aim, setAim] = useState<{ pressX: number; pressY: number; curX: number; curY: number; pointerId: number } | null>(null);
   const [previewLanding, setPreviewLanding] = useState<Landing | null>(null);
@@ -216,7 +215,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     }, 560);
   }, [gameState.dartsRemaining, gameState.closedNumbers, onHitNumber, onHitRing]);
 
-  // FIXED: canAim logic - properly handles CPU mode
+  // FIXED: canAim logic - properly handles CPU mode without toasts
   const canAim = !disabled && 
     !gameState.gameOver && 
     phaseRef.current === 'idle' && 
@@ -225,20 +224,14 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     (!gameState.isVsCPU || gameState.currentPlayer === 0);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (!canAim) {
-      if (gameState.isVsCPU && gameState.currentPlayer === 1 && !toastShown) {
-        setToastShown(true);
-        setTimeout(() => setToastShown(false), 3000);
-      }
-      return;
-    }
+    if (!canAim) return; // Silently block - NO TOAST
     const { x, y } = clientToSvg(e.clientX, e.clientY);
     overlayRef.current?.setPointerCapture(e.pointerId);
     setAim({ pressX: x, pressY: y, curX: x, curY: y, pointerId: e.pointerId });
     setBoardPhase('aiming');
     phaseRef.current = 'aiming';
     e.preventDefault();
-  }, [canAim, clientToSvg, gameState.isVsCPU, gameState.currentPlayer, toastShown]);
+  }, [canAim, clientToSvg]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!aim || e.pointerId !== aim.pointerId) return;
@@ -288,7 +281,6 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     if (isSpectator) return 'SPECTATING';
     if (boardPhase === 'throwing') return 'Dart in flight...';
     if (boardPhase === 'aiming') return 'Release to throw';
-    if (gameState.isVsCPU && gameState.currentPlayer === 1) return 'CPU THINKING...';
     return 'Swipe up to throw';
   };
 
@@ -322,35 +314,20 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
           }}
         >
           <defs>
-            {/* FIXED: Better gradients for 3D effect on ALL devices */}
-            <radialGradient id="ruby-grad" cx="40%" cy="35%" r="60%" fx="30%" fy="30%">
+            <radialGradient id="ruby-grad" cx="40%" cy="35%" r="60%">
               <stop offset="0%" stopColor="#FF6B6B" />
-              <stop offset="25%" stopColor="#FF0000" />
-              <stop offset="60%" stopColor="#CC0000" />
-              <stop offset="100%" stopColor="#880000" />
+              <stop offset="30%" stopColor="#CC0000" />
+              <stop offset="100%" stopColor="#660000" />
             </radialGradient>
-            <radialGradient id="emerald-grad" cx="40%" cy="35%" r="60%" fx="30%" fy="30%">
+            <radialGradient id="emerald-grad" cx="40%" cy="35%" r="60%">
               <stop offset="0%" stopColor="#6BFF6B" />
-              <stop offset="25%" stopColor="#00FF00" />
-              <stop offset="60%" stopColor="#00AA00" />
-              <stop offset="100%" stopColor="#006600" />
+              <stop offset="30%" stopColor="#00AA00" />
+              <stop offset="100%" stopColor="#005500" />
             </radialGradient>
             <radialGradient id="closed-grad" cx="40%" cy="35%" r="60%">
               <stop offset="0%" stopColor="#555555" />
               <stop offset="100%" stopColor="#222222" />
             </radialGradient>
-            
-            {/* FIXED: Better glow and shadow effects */}
-            <filter id="number-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-            <filter id="crystal-shine">
-              <feGaussianBlur stdDeviation="1.5" result="blur" />
-            </filter>
-            <filter id="drop-shadow">
-              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.6"/>
-            </filter>
           </defs>
 
           {/* Outer board background */}
@@ -384,14 +361,14 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               cx={CENTER} cy={CENTER}
               r={ring.outer * SCALE}
               fill="none"
-              stroke={hitPulse?.type === 'ring' && hitPulse.id === `ring-${i}` ? '#FFFFFF' : 'rgba(255,255,255,0.8)'}
-              strokeWidth={hitPulse?.type === 'ring' && hitPulse.id === `ring-${i}` ? '8' : '4'}
+              stroke={hitPulse?.type === 'ring' && hitPulse.id === `ring-${i}` ? '#FFFFFF' : 'rgba(255,255,255,0.7)'}
+              strokeWidth={hitPulse?.type === 'ring' && hitPulse.id === `ring-${i}` ? '6' : '2.5'}
               className={hitPulse?.type === 'ring' && hitPulse.id === `ring-${i}` ? 'animate-pulse' : ''}
               style={{ transition: 'stroke-width 0.2s' }}
             />
           ))}
 
-          {/* ===== NUMBERS WITH 3D CIRCLES - FIXED FOR PC ===== */}
+          {/* ===== NUMBERS ===== */}
           {BOARD_LAYOUT.map((pos) => {
             const ringData = RING_RADII[pos.ring];
             const r = ringData.outer;
@@ -403,38 +380,20 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
 
             return (
               <g key={pos.number}>
-                {/* 3D Number Circle - FIXED: Always visible on all devices */}
+                {/* Number circle */}
                 <circle
                   cx={x}
                   cy={y}
                   r={hitPulse?.id === `num-${pos.number}` ? pulseRadius : circleRadius}
                   fill={isClosed ? 'url(#closed-grad)' : (pos.color === 'red' ? 'url(#ruby-grad)' : 'url(#emerald-grad)')}
-                  stroke={isClosed ? '#555' : (pos.color === 'red' ? '#FF4444' : '#44FF44')}
-                  strokeWidth="3"
-                  filter="url(#drop-shadow)"
+                  stroke={isClosed ? '#444' : (pos.color === 'red' ? '#8B0000' : '#006400')}
+                  strokeWidth="2"
                   className={hitPulse?.id === `num-${pos.number}` ? 'animate-pulse' : ''}
                   style={{
                     transition: 'all 0.2s ease-out',
                     opacity: 1,
-                    // Force rendering on PC
-                    WebkitTransform: 'translateZ(0)',
-                    transform: 'translateZ(0)',
-                    vectorEffect: 'non-scaling-stroke',
                   }}
                 />
-
-                {/* Shine effect on circle */}
-                {!isClosed && (
-                  <ellipse
-                    cx={x - circleRadius * 0.25}
-                    cy={y - circleRadius * 0.3}
-                    rx={circleRadius * 0.4}
-                    ry={circleRadius * 0.25}
-                    fill="rgba(255,255,255,0.25)"
-                    transform={`rotate(-30 ${x - circleRadius * 0.25} ${y - circleRadius * 0.3})`}
-                    style={{ pointerEvents: 'none' }}
-                  />
-                )}
 
                 {/* Progress ring */}
                 {!isClosed && isHit && (
@@ -443,7 +402,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                     r={progressRadius}
                     fill="none"
                     stroke={pos.color === 'red' ? '#FF4444' : '#44FF44'}
-                    strokeWidth="4"
+                    strokeWidth="3"
                     strokeDasharray={`${hitProgress * (2 * Math.PI * progressRadius)} ${2 * Math.PI * progressRadius}`}
                     transform={`rotate(-90 ${x} ${y})`}
                     strokeLinecap="round"
@@ -461,14 +420,13 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                   fontSize={fontSize}
                   fontWeight="900"
                   fontFamily="'Orbitron', 'Arial Black', 'Helvetica Neue', sans-serif"
-                  filter="url(#number-glow)"
                   style={{ 
                     textShadow: isClosed 
                       ? 'none' 
-                      : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0,0,0,0.5)',
+                      : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0,0,0,0.3)',
                     paintOrder: 'stroke fill',
                     stroke: isClosed ? 'none' : 'rgba(0,0,0,0.5)',
-                    strokeWidth: '1.5px',
+                    strokeWidth: '1px',
                     letterSpacing: '0.5px',
                     fontVariantNumeric: 'tabular-nums',
                     textRendering: 'geometricPrecision',
@@ -524,7 +482,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
           )}
 
           {/* Idle / aim dart */}
-          {!dartFlying && !gameState.gameOver && (canAim || aim) && (
+          {!dartFlying && !gameState.gameOver && (
             <g
               pointerEvents={canAim ? "all" : "none"}
               style={{ transition: 'opacity 0.2s', cursor: canAim ? 'grab' : 'default' }}
