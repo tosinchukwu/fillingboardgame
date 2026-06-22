@@ -45,7 +45,7 @@ const AUDIO_ASSETS = {
   }
 };
 
-// ===== WALLET BUTTON COMPONENT (moved to top right) =====
+// ===== WALLET BUTTON COMPONENT =====
 const WalletButton = () => {
   const { open } = useWeb3Modal();
   const { address, isConnected } = useAccount();
@@ -110,7 +110,7 @@ const WalletButton = () => {
 };
 // ===== END WALLET BUTTON =====
 
-// ===== BRIDGE BUTTON COMPONENT (reusable for both screens) =====
+// ===== BRIDGE BUTTON COMPONENT =====
 const BridgeButton = ({ onClick }: { onClick: () => void }) => {
   return (
     <Button
@@ -327,6 +327,7 @@ const Index = () => {
   const batch2ToastShownRef = useRef<boolean>(false);
   const [isAutoJoining, setIsAutoJoining] = useState(false);
   const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
+  // ✅ MOVED HERE - supabaseConnected state
   const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   // ============================================================
@@ -361,10 +362,11 @@ const Index = () => {
     }
   })();
 
+  // ✅ MOVED HERE - activeSyncId computed BEFORE useCallback
   const activeSyncId = (() => {
-  if (setupMode === 'invite') return inviteCode;
-  return String(parsedMatchId || '');
-})();
+    if (setupMode === 'invite') return inviteCode;
+    return String(parsedMatchId || '');
+  })();
 
   // ============================================================
   // 5. ALL useReadContract HOOKS
@@ -405,13 +407,53 @@ const Index = () => {
     audio.play().catch(e => console.error("SFX failed", e));
   }, [sfxEnabled, volume]);
 
+  // ✅ UPDATED - Mark game as finished when game over
+  const markGameAsFinished = useCallback(async () => {
+    if (!activeSyncId || setupMode === 'solo') return;
+    
+    try {
+      const { error } = await supabase
+        .from('matches')
+        .update({ 
+          status: 'finished',
+          completed_at: new Date().toISOString()
+        })
+        .eq('match_id', activeSyncId);
+        
+      if (error) {
+        console.error("Failed to mark game as finished:", error);
+      } else {
+        console.log(`✅ Match ${activeSyncId} marked as finished`);
+      }
+    } catch (e) {
+      console.error("Error updating match status:", e);
+    }
+  }, [activeSyncId, setupMode]);
+
+  // ✅ UPDATED - Broadcast with game over status
   const broadcastGameState = useCallback(async (state: GameState) => {
     if (!activeSyncId || (setupMode !== 'multi' && setupMode !== 'invite') || isVsCPU) return;
-    if (state.gameOver && setupMode === 'invite' && inviteCode) {
+    
+    // Check if game is over and update status
+    if (state.gameOver) {
       try {
-        await supabase.from('matches').update({ status: 'finished' }).eq('match_id', inviteCode);
-      } catch { /* non-critical */ }
+        await supabase
+          .from('matches')
+          .update({ 
+            status: 'finished',
+            completed_at: new Date().toISOString(),
+            winner: state.winner !== null ? state.players[state.winner].name : null,
+            final_score_p1: state.players[0].totalScore,
+            final_score_p2: state.players[1].totalScore
+          })
+          .eq('match_id', activeSyncId);
+        console.log(`✅ Match ${activeSyncId} marked as finished with winner`);
+      } catch (e) {
+        console.error("Failed to mark match as finished:", e);
+      }
     }
+    
+    // Broadcast the state
     try {
       const serializedState = {
         ...state,
@@ -426,7 +468,7 @@ const Index = () => {
           .upsert({
             match_id: activeSyncId,
             game_state: serializedState,
-            status: 'active',
+            status: state.gameOver ? 'finished' : 'active',
             updated_at: new Date().toISOString()
           }, { onConflict: 'match_id' });
         error = res.error;
@@ -435,6 +477,7 @@ const Index = () => {
           .from('matches')
           .update({
             game_state: serializedState,
+            status: state.gameOver ? 'finished' : 'active',
             updated_at: new Date().toISOString()
           })
           .eq('match_id', activeSyncId);
@@ -498,7 +541,7 @@ const Index = () => {
   }, []);
 
   // ============================================================
-  // 8. ALL useEffect HOOKS (in order of dependency)
+  // 8. ALL useEffect HOOKS
   // ============================================================
 
   // Auto-load match from URL parameters
@@ -623,7 +666,7 @@ const Index = () => {
     return () => window.removeEventListener('hashchange', handleHashSync);
   }, []);
 
-
+  // ✅ UPDATED - Supabase sync with status checking
   useEffect(() => {
     if (!activeSyncId || (setupMode === 'solo' && !matchId)) return;
 
@@ -631,10 +674,20 @@ const Index = () => {
       try {
         const { data, error } = await supabase
           .from('matches')
-          .select('game_state, lobby_host, lobby_guest')
+          .select('game_state, lobby_host, lobby_guest, status')
           .eq('match_id', activeSyncId)
           .single();
         if (data) {
+          // Check if match is already finished
+          if (data.status === 'finished' && gameStarted) {
+            toast.info("This match has already been completed.", {
+              duration: 3000,
+              icon: "🏁",
+            });
+            resetGame();
+            return;
+          }
+          
           if (data.game_state) {
             const newState = data.game_state;
             if (newState.closedNumbers) {
@@ -675,6 +728,17 @@ const Index = () => {
         { event: '*', schema: 'public', table: 'matches', filter: `match_id=eq.${activeSyncId}` },
         (payload) => {
           const row = payload.new as any;
+          
+          // Check if match was marked as finished
+          if (row.status === 'finished' && gameStarted) {
+            toast.info("Match has been completed!", {
+              duration: 3000,
+              icon: "🏁",
+            });
+            resetGame();
+            return;
+          }
+          
           const newState = row.game_state;
           if (newState) {
             if (newState.closedNumbers) {
@@ -728,27 +792,36 @@ const Index = () => {
     };
   }, [setupMode, activeSyncId]);
 
-  // Heartbeat
+  // ✅ UPDATED - Heartbeat only for active matches (skip finished)
   useEffect(() => {
     if (!gameStarted || !isHost || !activeSyncId || setupMode === 'solo') return;
+    
     const interval = setInterval(async () => {
       try {
-        await supabase
+        // Check if match is still active before updating
+        const { data } = await supabase
           .from('matches')
-          .update({
-            status: 'active',
-            updated_at: new Date().toISOString()
-          })
-          .eq('match_id', activeSyncId);
+          .select('status')
+          .eq('match_id', activeSyncId)
+          .single();
+          
+        // Only update status to 'active' if match isn't finished
+        if (data?.status !== 'finished') {
+          await supabase
+            .from('matches')
+            .update({
+              status: 'active',
+              updated_at: new Date().toISOString()
+            })
+            .eq('match_id', activeSyncId);
+        }
       } catch (e) {
         console.error("Heartbeat failed:", e);
       }
     }, 45000);
+    
     return () => {
       clearInterval(interval);
-      if (isHost && activeSyncId) {
-        supabase.from('matches').update({ status: 'finished' }).eq('match_id', activeSyncId).then();
-      }
     };
   }, [gameStarted, isHost, setupMode, activeSyncId]);
 
@@ -971,6 +1044,7 @@ const Index = () => {
 
   const isMatchValid = contractMatch && (contractMatch as any).id !== 0n;
 
+  // ✅ UPDATED - startGame with game over handling
   const startGame = () => {
     if (!contractMatch) return;
     const m = contractMatch as any;
@@ -1011,7 +1085,13 @@ const Index = () => {
     setGameStarted(true);
   };
 
+  // ✅ UPDATED - resetGame marks as finished if game was in progress
   const resetGame = () => {
+    // If game was in progress and game is over, mark as finished
+    if (gameStarted && gameState?.gameOver) {
+      markGameAsFinished();
+    }
+    
     setGameStarted(false);
     setGameState(null);
     setShowBatchOverlay(false);
@@ -1093,7 +1173,7 @@ const Index = () => {
         lobby_guest: null,
         game_state: null,
         is_featured: isFeatured,
-        status: 'active',
+        status: 'waiting',
       }, { onConflict: 'match_id' });
       if (error) {
         console.error('Failed to create lobby row:', error);
