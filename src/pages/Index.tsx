@@ -391,6 +391,75 @@ const Index = () => {
     );
   }
 
+const [isAutoJoining, setIsAutoJoining] = useState(false);
+  
+  // ===== AUTO-LOAD MATCH FROM URL PARAMETERS =====
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const matchIdFromUrl = urlParams.get('matchId');
+    
+    if (mode === 'pvp' && matchIdFromUrl) {
+        console.log('🔍 Auto-loading match from URL:', matchIdFromUrl);
+      
+      // Show loading state
+      setIsAutoJoining(true);
+      
+      // Set the mode to 'multi' (Private Match)
+      setSetupMode('multi');
+      
+      // Set the match ID
+      setMatchId(matchIdFromUrl);
+      // Set the mode to 'multi' (Private Match)
+      setSetupMode('multi');
+      
+      // Set the match ID
+      setMatchId(matchIdFromUrl);
+      
+      // Auto-join the lobby after a short delay
+      setTimeout(() => {
+        const cleanId = parseMatchId(matchIdFromUrl);
+        if (isValidMatchId(cleanId)) {
+          setMatchId(cleanId);
+          setIsLobbyJoined(true);
+          
+          toast.success(`🎯 Match ${matchIdFromUrl} loaded!`, {
+            duration: 3000,
+            icon: '🎯',
+          });
+        } else {
+          toast.error("Invalid match ID format", {
+            duration: 3000,
+          });
+        }
+      }, 500);
+      
+      // Clear the URL parameters so they don't cause issues on refresh
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []); // Empty dependency array - runs once on mount
+
+  // ===== LOADING UI =====
+  if (isAutoJoining) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-2xl">🎯</span>
+            </div>
+          </div>
+          <p className="text-white text-xl font-bold">Loading Your Match</p>
+          <p className="text-white/40 text-sm">Please wait while we prepare your game...</p>
+          <div className="w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: '60%' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   const handleCustomTrackAdd = (track: CustomTrack) => {
     setCustomTracks(prev => [...prev, track]);
   };
@@ -523,20 +592,40 @@ const Index = () => {
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const prevBatchRef = useRef<number>(1);
 
+  // ===== UPDATED startGame FUNCTION =====
   const startGame = () => {
     if (!contractMatch) return;
     const m = contractMatch as any;
     setIsVsCPU(false);
+    
+    // Check if it's competitive mode (both players paid)
+    const isCompetitive = m.player1Paid && m.player2Paid;
+    
+    // Create initial state with mode flag
     const initialState = createInitialGameState(
       m.player1Name || 'Player 1',
       m.player1,
       m.player2Name || 'Player 2',
       m.player2,
-      false
+      false,
+      isCompetitive // Pass mode flag
     );
+    
+    // Add mode metadata to the state
+    initialState.mode = isCompetitive ? 'competitive' : 'casual';
+    initialState.isCompetitive = isCompetitive;
+    
     setGameState(initialState);
     setGameStarted(true);
-    broadcastGameState(initialState);
+    
+    // Broadcast with mode information
+    broadcastGameState({
+      ...initialState,
+      mode: isCompetitive ? 'competitive' : 'casual',
+      matchId: matchId,
+      player1Paid: m.player1Paid,
+      player2Paid: m.player2Paid
+    });
   };
 
   const activeSyncId = (() => {
@@ -1296,6 +1385,7 @@ const Index = () => {
             <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Match Lobby: {matchId}</span>
             <Button variant="ghost" onClick={() => { setIsLobbyJoined(false); setMatchId(''); }} className="h-6 text-[8px] uppercase tracking-widest text-white/30 hover:text-white/60">Change ID</Button>
           </div>
+          
           {isLoadingMatch ? (
             <div className="flex flex-col items-center py-8 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -1317,6 +1407,8 @@ const Index = () => {
                     <span className="text-[10px] text-red-200">Unauthorized: Your wallet is not a participant in this match.</span>
                   </div>
                 )}
+              
+              {/* Player 1 Status */}
               <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player1Paid) ? 'border-primary/40' : 'border-white/5'}`}>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player1Name || 'Commander A'}</span>
@@ -1336,6 +1428,8 @@ const Index = () => {
                   )}
                 </div>
               </div>
+              
+              {/* Player 2 Status */}
               <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player2Paid) ? 'border-primary/40' : 'border-white/5'}`}>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player2Name || 'Commander B'}</span>
@@ -1355,19 +1449,42 @@ const Index = () => {
                   )}
                 </div>
               </div>
+
+              {/* Status Message - Handles both Casual and Competitive */}
               <p className="text-[9px] text-white/40 italic text-center font-medium mt-2">
-                {(contractMatch as any).player1Paid && (contractMatch as any).player2Paid
-                  ? "Match details verified. Confirm your entry below."
-                  : "Waiting for both commanders to join via fillinggame.vercel.app"}
+                {((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) ? (
+                  "🏆 Match fully verified. Competitive mode enabled — rewards at stake!"
+                ) : (
+                  "🎯 Valid match ID confirmed. Casual play enabled — no payment required."
+                )}
               </p>
-              {(contractMatch as any).player1Paid && (contractMatch as any).player2Paid && (
-                <Button
-                  onClick={startGame}
-                  className="w-full h-12 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 animate-in zoom-in-50 duration-500"
-                >
-                  🛸 Confirm & Enter Game
-                </Button>
-              )}
+
+              {/* Mode Badge */}
+              <div className="flex justify-center">
+                <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                  ((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) 
+                    ? 'bg-primary/20 text-primary border border-primary/30' 
+                    : 'bg-white/5 text-white/40 border border-white/10'
+                }`}>
+                  {((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) 
+                    ? '⚔️ Competitive Mode' 
+                    : '🎯 Casual Mode'}
+                </div>
+              </div>
+
+              {/* Enter Game Button - Always visible for both modes */}
+              <Button
+                onClick={startGame}
+                className={`w-full h-12 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-[0_0_20px_rgba(232,65,66,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 animate-in zoom-in-50 duration-500 ${
+                  ((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) 
+                    ? 'bg-gradient-to-r from-primary to-primary/80' 
+                    : 'bg-primary'
+                }`}
+              >
+                {((contractMatch as any).player1Paid && (contractMatch as any).player2Paid) 
+                  ? '⚔️ Enter Competitive Match' 
+                  : '🎮 Enter Casual Game'}
+              </Button>
             </div>
           ) : (
             <div className="py-6 text-center">
@@ -1378,7 +1495,7 @@ const Index = () => {
         </div>
       );
     }
-
+    
     if (setupMode === 'invite') {
       return (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">

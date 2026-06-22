@@ -14,6 +14,24 @@ import {
 } from 'viem/chains';
 import { defineChain } from 'viem';
 
+// Add at the top with other contract addresses
+export const ESCROW_CONTRACT_ADDRESSES = {
+ 
+  avalancheFuji: '0x',
+  baseSepolia: '0x...',
+  arbitrumSepolia: '0x...',   // ← You'll fill this after deployment
+  optimismSepolia: '0x',
+  bscTestnet: '0x',
+  polygonAmoy: '0x',
+  arcTestnet: '0x'
+  // add other chains as needed
+};
+
+// Also add a helper
+export const isEscrowConfigured = (chainId: number) => {
+  return !!ESCROW_CONTRACT_ADDRESSES[chainId as keyof typeof ESCROW_CONTRACT_ADDRESSES];
+};
+
 // Define custom Arc Testnet
 export const arcTestnet = defineChain({
   id: 5042002,

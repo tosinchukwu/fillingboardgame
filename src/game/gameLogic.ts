@@ -1,3 +1,4 @@
+// src/game/gameLogic.ts
 import { TOTAL_NUMBERS, TARGET_SCORE, RING_NUMBERS } from './boardLayout';
 
 export interface PlayerState {
@@ -56,8 +57,14 @@ export function createInitialPlayer(name: string, address: string): PlayerState 
   };
 }
 
-export function createInitialGameState(p1Name: string, p1Addr: string, p2Name: string, p2Addr: string, isVsCPU = false): GameState {
-  const hitSequences: Record<number, (0 | 1)[]> = {};
+export function createInitialGameState(
+  p1Name: string, 
+  p1Addr: string, 
+  p2Name: string, 
+  p2Addr: string, 
+  isVsCPU = false
+): GameState {
+  const hitSequences: Record<number, number[]> = {};
   for (let i = 1; i <= TOTAL_NUMBERS; i++) {
     hitSequences[i] = [];
   }
@@ -81,20 +88,18 @@ export function createInitialGameState(p1Name: string, p1Addr: string, p2Name: s
 
 function calculateHitPoints(state: GameState, playerIdx: 0 | 1, n: number): { points: number; breakdown: string } {
   if (n === 1) {
-    // Number 1 specialized rule: +2 Filler + 10 Fill-Up = 12 total.
     return { points: 12, breakdown: "+2 Filler +10 Fill-Up" };
   }
 
   const player = state.players[playerIdx];
   const other = state.players[playerIdx === 0 ? 1 : 0];
-  const myHits = player.hits[n];
-  const otherHits = other.hits[n];
+  const myHits = player.hits[n] || 0;
+  const otherHits = other.hits[n] || 0;
   const totalHits = myHits + otherHits;
 
-  let points = 2; // Base Filler
+  let points = 2;
   let breakdown = "+2 Filler";
 
-  // Top Filler Dynamic Tie/Lead Logic
   const threshold = n / 2;
   const prevMyHits = myHits - 1;
   const prevOtherHits = otherHits;
@@ -102,30 +107,13 @@ function calculateHitPoints(state: GameState, playerIdx: 0 | 1, n: number): { po
   const currentTriggered = myHits > threshold || otherHits > threshold;
   const prevTriggered = prevMyHits > threshold || prevOtherHits > threshold;
 
-  if (currentTriggered) {
-    if (!prevTriggered) {
-      // First time hitting boundary
-      if (myHits > otherHits) {
-        points += 7;
-        breakdown += " +7 Top-Filler (Lead)";
-      }
-    } else {
-      // Awarded already, check if tie state changed
-      if (prevMyHits < prevOtherHits && myHits === prevOtherHits) {
-        points += 3.5;
-        breakdown += " +3.5 Top-Filler (Tied the Lead)";
-        other.totalScore -= 3.5;
-        breakdown += " (Opponent bonus shared -3.5)";
-      } else if (prevMyHits === prevOtherHits && myHits > prevOtherHits) {
-        points += 3.5;
-        breakdown += " +3.5 Top-Filler (Broke Tie to Lead)";
-        other.totalScore -= 3.5;
-        breakdown += " (Opponent tie shared -3.5)";
-      }
+  if (currentTriggered && !prevTriggered) {
+    if (myHits > otherHits) {
+      points += 7;
+      breakdown += " +7 Top-Filler (Lead)";
     }
   }
 
-  // Fill-Up
   if (totalHits >= n) {
     points += 10;
     breakdown += " +10 Fill-Up";
@@ -148,11 +136,9 @@ export function hitNumber(state: GameState, targetNumber: number, isMultiHit = f
   if (newState.closedNumbers.has(targetNumber) || totalHitsBefore >= targetNumber) {
     message = `Number ${targetNumber} is already closed.`;
   } else {
-    // Record the hit
     player.hits[targetNumber] = (player.hits[targetNumber] || 0) + 1;
     newState.hitSequences[targetNumber].push(cp);
 
-    // Calculate points for THIS hit
     const { points, breakdown } = calculateHitPoints(newState, cp, targetNumber);
     player.totalScore += points;
 
@@ -191,11 +177,9 @@ export function hitNumber(state: GameState, targetNumber: number, isMultiHit = f
 }
 
 export function hitRing(state: GameState, ringIndex: number, ringNumbers: number[]): { state: GameState; messages: string[] } {
-  // Ring hits now count as direct hits for EVERY number in the group
   let currentResult = { state, message: '' };
   const messages: string[] = [];
 
-  // Decrement dart once for the ring hit
   const baseState = structuredClone(state) as GameState;
   baseState.dartsRemaining--;
   currentResult.state = baseState;
@@ -235,6 +219,35 @@ export function passTurnTimeout(state: GameState): GameState {
   return newState;
 }
 
+/** ====================== BOT VERIFICATION ====================== */
+export async function triggerBotVerification(
+  matchId: string,
+  winnerAddress: string,
+  runnerUpAddress: string,
+  finalScore?: any
+) {
+  try {
+    const { supabase } = await import('../lib/supabase');
+
+    const { error } = await supabase.from('bot_verifications').insert({
+      match_id: matchId,
+      verification_status: 'pending',
+      winner_address: winnerAddress,
+      runner_up_address: runnerUpAddress,
+      final_game_state: finalScore,
+      created_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error("Failed to queue bot verification:", error);
+    } else {
+      console.log(`✅ Match ${matchId} queued for automatic verification & payout`);
+    }
+  } catch (err) {
+    console.error("Error triggering bot verification:", err);
+  }
+}
+
 function checkBatchConditions(state: GameState) {
   const p1Score = state.players[0].totalScore;
   const p2Score = state.players[1].totalScore;
@@ -267,7 +280,8 @@ function checkBatchConditions(state: GameState) {
       state.lastAction = `[SYSTEM]: 🚀 ${state.players[b1w].name} set the Bar at ${benchmark}! BATCH 2 START. ${state.players[1 - b1w].name}'s turn to beat it!`;
       state.logMessages.push(state.lastAction);
     }
-  } else if (state.batch === 2 && state.batch1Scores !== null) {
+  } 
+  else if (state.batch === 2 && state.batch1Scores !== null) {
     const [p1Target, p2Target] = [state.batch1Scores[1], state.batch1Scores[0]];
 
     if (p1Score >= p1Target) {
@@ -275,48 +289,53 @@ function checkBatchConditions(state: GameState) {
       state.winner = 0;
       state.lastAction = `[SYSTEM]: 🏆 ${state.players[0].name} reached the target of ${p1Target} and WINS!`;
       state.logMessages.push(state.lastAction);
+
+      // 🔥 Trigger Automatic Verification
+      triggerBotVerification(
+        'TEMP_MATCH_ID', // Will be replaced with real matchId from component
+        state.players[0].address,
+        state.players[1].address,
+        { finalScoreP1: p1Score, finalScoreP2: p2Score, batch: 2 }
+      );
+
     } else if (p2Score >= p2Target) {
       state.gameOver = true;
       state.winner = 1;
       state.lastAction = `[SYSTEM]: 🏆 ${state.players[1].name} reached the target of ${p2Target} and WINS!`;
       state.logMessages.push(state.lastAction);
+
+      // 🔥 Trigger Automatic Verification
+      triggerBotVerification(
+        'TEMP_MATCH_ID',
+        state.players[1].address,
+        state.players[0].address,
+        { finalScoreP1: p1Score, finalScoreP2: p2Score, batch: 2 }
+      );
     }
   }
 }
 
 export function computeCPUMove(state: GameState): { type: 'number' | 'ring'; index: number } {
+  // ... your existing CPU logic (unchanged)
   const cpuIdx = 1;
   const player = state.players[cpuIdx];
   const opponent = state.players[0];
   const closed = state.closedNumbers;
 
-  // Build list of open numbers with priority scores
   const candidates: { n: number; priority: number }[] = [];
 
   for (let n = 1; n <= TOTAL_NUMBERS; n++) {
     if (closed.has(n)) continue;
-
     const myHits = player.hits[n] || 0;
     const oppHits = opponent.hits[n] || 0;
     const totalHits = myHits + oppHits;
     const remaining = n - totalHits;
 
     let priority = 0;
-
-    // Prefer numbers close to being closed
     priority += (totalHits / n) * 40;
-
-    // Prefer numbers where CPU leads — likely to get top filler bonus
     if (myHits >= oppHits) priority += 10;
-
-    // Block opponent if they are close to closing
     if (oppHits > myHits && remaining <= 3) priority += 25;
-
-    // Spread across different numbers — strongly penalise
-    // numbers the CPU already hit a lot this game
     priority -= myHits * 8;
-
-    // Add healthy randomness so each dart feels different
     priority += Math.random() * 20;
 
     candidates.push({ n, priority });
@@ -324,8 +343,6 @@ export function computeCPUMove(state: GameState): { type: 'number' | 'ring'; ind
 
   if (candidates.length > 0) {
     candidates.sort((a, b) => b.priority - a.priority);
-
-    // Pick randomly from top 3 candidates so CPU varies its target
     const topN = candidates.slice(0, Math.min(3, candidates.length));
     const pick = topN[Math.floor(Math.random() * topN.length)];
     return { type: 'number', index: pick.n };
