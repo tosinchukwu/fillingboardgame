@@ -327,7 +327,6 @@ const Index = () => {
   const batch2ToastShownRef = useRef<boolean>(false);
   const [isAutoJoining, setIsAutoJoining] = useState(false);
   const [turnSeconds, setTurnSeconds] = useState<number | null>(null);
-  // ✅ MOVED HERE - supabaseConnected state
   const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   // ============================================================
@@ -347,7 +346,7 @@ const Index = () => {
   const cpuAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ============================================================
-  // 4. COMPUTED VALUES (before hooks that depend on them)
+  // 4. COMPUTED VALUES
   // ============================================================
   const activeChainId = chain?.id || SUPPORTED_CHAINS[0].id;
   const activeContractAddress = CONTRACT_ADDRESS_MAP[activeChainId] || CONTRACT_ADDRESS_MAP[SUPPORTED_CHAINS[0].id];
@@ -362,7 +361,6 @@ const Index = () => {
     }
   })();
 
-  // ✅ MOVED HERE - activeSyncId computed BEFORE useCallback
   const activeSyncId = (() => {
     if (setupMode === 'invite') return inviteCode;
     return String(parsedMatchId || '');
@@ -407,7 +405,6 @@ const Index = () => {
     audio.play().catch(e => console.error("SFX failed", e));
   }, [sfxEnabled, volume]);
 
-  // ✅ UPDATED - Mark game as finished when game over
   const markGameAsFinished = useCallback(async () => {
     if (!activeSyncId || setupMode === 'solo') return;
     
@@ -430,11 +427,9 @@ const Index = () => {
     }
   }, [activeSyncId, setupMode]);
 
-  // ✅ UPDATED - Broadcast with game over status
   const broadcastGameState = useCallback(async (state: GameState) => {
     if (!activeSyncId || (setupMode !== 'multi' && setupMode !== 'invite') || isVsCPU) return;
     
-    // Check if game is over and update status
     if (state.gameOver) {
       try {
         await supabase
@@ -453,7 +448,6 @@ const Index = () => {
       }
     }
     
-    // Broadcast the state
     try {
       const serializedState = {
         ...state,
@@ -491,8 +485,48 @@ const Index = () => {
     }
   }, [setupMode, activeSyncId, isVsCPU, theme]);
 
+  // ============================================================
+  // UPDATED - handleHitNumber with turn validation
+  // ============================================================
   const handleHitNumber = useCallback((num: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
+    
+    // ✅ CRITICAL FIX: Check if it's the current player's turn
+    if (gameState.isVsCPU) {
+      if (gameState.currentPlayer !== 0) {
+        toast.warning("Wait for CPU to finish its turn!", {
+          duration: 1500,
+          icon: "🤖",
+        });
+        return;
+      }
+    } else {
+      const myAddr = address?.toLowerCase();
+      const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
+      
+      if (!myAddr || !activePlayerAddr) {
+        toast.error("Player address not found", {
+          duration: 1500,
+        });
+        return;
+      }
+      
+      if (myAddr !== activePlayerAddr) {
+        toast.warning(`It's ${gameState.players[gameState.currentPlayer].name}'s turn!`, {
+          duration: 1500,
+          icon: "⏳",
+        });
+        return;
+      }
+    }
+    
+    if (gameState.dartsRemaining <= 0) {
+      toast.warning("No darts remaining this turn!", {
+        duration: 1500,
+      });
+      return;
+    }
+    
     const result = hitNumber(gameState, num);
     const updatedState = result.state;
     updatedState.theme = theme;
@@ -507,10 +541,50 @@ const Index = () => {
     setGameState(updatedState);
     setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: num, type: 'number' }]);
     broadcastGameState(updatedState);
-  }, [gameState, broadcastGameState, theme]);
+  }, [gameState, broadcastGameState, theme, address]);
 
+  // ============================================================
+  // UPDATED - handleHitRing with turn validation
+  // ============================================================
   const handleHitRing = useCallback((ringIdx: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
+    
+    // ✅ CRITICAL FIX: Same turn validation for rings
+    if (gameState.isVsCPU) {
+      if (gameState.currentPlayer !== 0) {
+        toast.warning("Wait for CPU to finish its turn!", {
+          duration: 1500,
+          icon: "🤖",
+        });
+        return;
+      }
+    } else {
+      const myAddr = address?.toLowerCase();
+      const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
+      
+      if (!myAddr || !activePlayerAddr) {
+        toast.error("Player address not found", {
+          duration: 1500,
+        });
+        return;
+      }
+      
+      if (myAddr !== activePlayerAddr) {
+        toast.warning(`It's ${gameState.players[gameState.currentPlayer].name}'s turn!`, {
+          duration: 1500,
+          icon: "⏳",
+        });
+        return;
+      }
+    }
+    
+    if (gameState.dartsRemaining <= 0) {
+      toast.warning("No darts remaining this turn!", {
+        duration: 1500,
+      });
+      return;
+    }
+    
     const nums = RING_NUMBERS[ringIdx];
     const result = hitRing(gameState, ringIdx, nums);
     const updatedState = result.state;
@@ -526,7 +600,7 @@ const Index = () => {
     setGameState(updatedState);
     setHitHistory(prev => [...prev, { player: gameState.currentPlayer, value: ringIdx, type: 'ring' }]);
     broadcastGameState(updatedState);
-  }, [gameState, broadcastGameState, theme]);
+  }, [gameState, broadcastGameState, theme, address]);
 
   const handleCustomTrackAdd = useCallback((track: CustomTrack) => {
     setCustomTracks(prev => [...prev, track]);
@@ -666,7 +740,7 @@ const Index = () => {
     return () => window.removeEventListener('hashchange', handleHashSync);
   }, []);
 
-  // ✅ UPDATED - Supabase sync with status checking
+  // Supabase sync
   useEffect(() => {
     if (!activeSyncId || (setupMode === 'solo' && !matchId)) return;
 
@@ -678,7 +752,6 @@ const Index = () => {
           .eq('match_id', activeSyncId)
           .single();
         if (data) {
-          // Check if match is already finished
           if (data.status === 'finished' && gameStarted) {
             toast.info("This match has already been completed.", {
               duration: 3000,
@@ -729,7 +802,6 @@ const Index = () => {
         (payload) => {
           const row = payload.new as any;
           
-          // Check if match was marked as finished
           if (row.status === 'finished' && gameStarted) {
             toast.info("Match has been completed!", {
               duration: 3000,
@@ -792,20 +864,18 @@ const Index = () => {
     };
   }, [setupMode, activeSyncId]);
 
-  // ✅ UPDATED - Heartbeat only for active matches (skip finished)
+  // Heartbeat
   useEffect(() => {
     if (!gameStarted || !isHost || !activeSyncId || setupMode === 'solo') return;
     
     const interval = setInterval(async () => {
       try {
-        // Check if match is still active before updating
         const { data } = await supabase
           .from('matches')
           .select('status')
           .eq('match_id', activeSyncId)
           .single();
           
-        // Only update status to 'active' if match isn't finished
         if (data?.status !== 'finished') {
           await supabase
             .from('matches')
@@ -1014,7 +1084,7 @@ const Index = () => {
   }, [isHost, inviteCode]);
 
   // ============================================================
-  // 9. NOW CONDITIONAL RETURNS (after ALL hooks)
+  // 9. CONDITIONAL RETURNS
   // ============================================================
 
   // Loading UI for auto-joining
@@ -1039,12 +1109,11 @@ const Index = () => {
   }
 
   // ============================================================
-  // 10. COMPONENT LOGIC (functions and variables)
+  // 10. COMPONENT LOGIC
   // ============================================================
 
   const isMatchValid = contractMatch && (contractMatch as any).id !== 0n;
 
-  // ✅ UPDATED - startGame with game over handling
   const startGame = () => {
     if (!contractMatch) return;
     const m = contractMatch as any;
@@ -1085,9 +1154,7 @@ const Index = () => {
     setGameStarted(true);
   };
 
-  // ✅ UPDATED - resetGame marks as finished if game was in progress
   const resetGame = () => {
-    // If game was in progress and game is over, mark as finished
     if (gameStarted && gameState?.gameOver) {
       markGameAsFinished();
     }
@@ -1140,12 +1207,17 @@ const Index = () => {
     }
   };
 
+  // ============================================================
+  // UPDATED - canIThrow with proper turn validation
+  // ============================================================
   const canIThrow = (() => {
     if (!gameState || gameState.gameOver || gameState.dartsRemaining <= 0 || showBatchOverlay) return false;
     if (isDartFlying) return false;
+    
     if (gameState.isVsCPU) {
       return gameState.currentPlayer === 0;
     }
+    
     const myAddr = address?.toLowerCase();
     const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
     if (!myAddr || !activePlayerAddr) return false;
@@ -1985,13 +2057,35 @@ const Index = () => {
           </div>
         )}
 
-        {/* ===== TOP HEADER BAR ===== */}
+        {/* ===== TOP HEADER BAR - UPDATED with Turn Indicator ===== */}
         <div className="w-full max-w-[1800px] mb-4 px-2 flex flex-col items-center gap-3">
           <h1 className="text-3xl xl:text-5xl text-white tracking-[0.25em] font-black whitespace-nowrap text-center">FILLING GAME</h1>
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 bg-[#1a1a2e] border border-white/10 py-2 px-3 sm:px-4 rounded-full shadow-lg">
             <span className="font-mono-game text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
               {gameState.players[gameState.currentPlayer].name}'S TURN
             </span>
+            {/* ✅ Turn indicator for multiplayer */}
+            {!gameState.isVsCPU && address && (
+              <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                address.toLowerCase() === gameState.players[gameState.currentPlayer].address?.toLowerCase()
+                  ? 'bg-green-500/30 text-green-400 border border-green-500/50'
+                  : 'bg-yellow-500/30 text-yellow-400 border border-yellow-500/50'
+              }`}>
+                {address.toLowerCase() === gameState.players[gameState.currentPlayer].address?.toLowerCase()
+                  ? '🎯 YOUR TURN'
+                  : '⏳ WAITING'}
+              </span>
+            )}
+            {/* CPU mode indicator */}
+            {gameState.isVsCPU && (
+              <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                gameState.currentPlayer === 0
+                  ? 'bg-green-500/30 text-green-400 border border-green-500/50'
+                  : 'bg-yellow-500/30 text-yellow-400 border border-yellow-500/50'
+              }`}>
+                {gameState.currentPlayer === 0 ? '🎯 YOUR TURN' : '🤖 CPU THINKING...'}
+              </span>
+            )}
             <div className="h-5 w-[1px] bg-white/20" />
             <span className="text-white/80 text-[11px] font-mono-game tracking-[0.2em] uppercase font-semibold">
               {gameState.dartsRemaining} DARTS REMAINING
@@ -2036,7 +2130,7 @@ const Index = () => {
           {/* === ROW 1: Mobile Collapsible Panels (ONLY on mobile) === */}
           <div className="block lg:hidden w-full grid grid-cols-1 gap-4">
 
-            {/* Game Log Panel - Collapsible with fixed height and scroll */}
+            {/* Game Log Panel */}
             <div className="w-full max-w-md mx-auto">
               <button
                 onClick={() => setIsLogExpanded(!isLogExpanded)}
@@ -2075,7 +2169,7 @@ const Index = () => {
               )}
             </div>
 
-            {/* Stats Panel - Collapsible with fixed height and scroll */}
+            {/* Stats Panel */}
             <div className="w-full">
               <button
                 onClick={() => setIsScoresExpanded(!isScoresExpanded)}
@@ -2147,7 +2241,7 @@ const Index = () => {
               )}
             </div>
 
-            {/* 🎯 DARTBOARD - MOBILE */}
+            {/* Dartboard */}
             <div className="w-full flex flex-col items-center justify-center py-2">
               <div className="w-full max-w-[350px] mx-auto">
                 <Dartboard
@@ -2184,12 +2278,11 @@ const Index = () => {
             )}
           </div>
 
-          {/* === ROW 2: PC 3-Column Layout (ONLY on desktop) === */}
+          {/* === ROW 2: PC 3-Column Layout === */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-stretch">
 
-            {/* LEFT COLUMN: Game Log + Target Score - WIDER */}
+            {/* LEFT COLUMN */}
             <div className="flex flex-col h-full gap-4 w-[420px] flex-shrink-0">
-              {/* Game Log */}
               <div className="glass-panel rounded-3xl flex-1 flex flex-col border-white/10 overflow-hidden shadow-2xl w-full min-h-0">
                 <div className="bg-white/5 p-3 border-b border-white/10 flex items-center justify-between shrink-0">
                   <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Game Log</h3>
@@ -2246,7 +2339,6 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Target Score Display - Same width as Game Log */}
               <div className="glass-panel rounded-3xl p-5 border-white/10 shadow-2xl w-full shrink-0">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/40">Target Score</span>
@@ -2285,7 +2377,7 @@ const Index = () => {
               </div>
             </div>
 
-            {/* CENTER COLUMN: Dartboard - Slight Left Shift */}
+            {/* CENTER COLUMN */}
             <div className="flex flex-col items-center justify-center ml-[-20px]">
               <Dartboard
                 gameState={gameState}
@@ -2317,7 +2409,7 @@ const Index = () => {
               )}
             </div>
 
-            {/* RIGHT COLUMN: Scoring Table - WIDER */}
+            {/* RIGHT COLUMN */}
             <div className="flex flex-col h-full flex-1 min-h-0">
               <div className="flex-1 min-h-0 relative">
                 <div className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
