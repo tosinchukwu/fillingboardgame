@@ -2,16 +2,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Escrow
  * @dev Escrow contract for locking USDC during tournament matches
  * @notice Players deposit USDC, winner receives payout after match completion
+ * @dev Works alongside FillGameTournament contract
  */
-contract Escrow is Ownable, ReentrancyGuard {
+contract Escrow is Ownable, ReentrancyGuard, Pausable {
+    using SafeERC20 for IERC20;
+
     // ─── ERRORS ──────────────────────────────────────────────────────
 
     error InvalidMatchId();
@@ -25,6 +29,7 @@ contract Escrow is Ownable, ReentrancyGuard {
     error InvalidAmount();
     error TransferFailed();
     error NotOwnerOrTournament();
+    error MatchNotFound();
 
     // ─── STRUCTS ─────────────────────────────────────────────────────
 
@@ -81,6 +86,13 @@ contract Escrow is Ownable, ReentrancyGuard {
         address indexed newUSDC
     );
 
+    event MatchInitialized(
+        uint256 indexed matchId,
+        address player1,
+        address player2,
+        uint256 amount
+    );
+
     // ─── MODIFIERS ──────────────────────────────────────────────────
 
     modifier onlyTournamentContract() {
@@ -96,7 +108,7 @@ contract Escrow is Ownable, ReentrancyGuard {
     }
 
     modifier matchExists(uint256 matchId) {
-        if (matchEscrows[matchId].matchId == 0) revert InvalidMatchId();
+        if (matchEscrows[matchId].matchId == 0) revert MatchNotFound();
         _;
     }
 
@@ -107,6 +119,8 @@ contract Escrow is Ownable, ReentrancyGuard {
         address _tournamentContract,
         address _owner
     ) Ownable(_owner) {
+        require(_usdc != address(0), "Invalid USDC address");
+        require(_tournamentContract != address(0), "Invalid tournament address");
         usdc = IERC20(_usdc);
         tournamentContract = _tournamentContract;
     }
@@ -125,7 +139,7 @@ contract Escrow is Ownable, ReentrancyGuard {
         address player1,
         address player2,
         uint256 amount
-    ) external onlyTournamentContract {
+    ) external onlyTournamentContract whenNotPaused {
         if (matchId == 0) revert InvalidMatchId();
         if (player1 == address(0) || player2 == address(0)) revert InvalidAmount();
         if (amount == 0) revert InvalidAmount();
@@ -134,9 +148,8 @@ contract Escrow is Ownable, ReentrancyGuard {
         if (matchEscrows[matchId].matchId != 0) {
             // Allow re-init if not fully funded and not released
             MatchEscrow storage existing = matchEscrows[matchId];
-            if (existing.released || existing.refunded) {
-                revert AlreadyReleased();
-            }
+            if (existing.released) revert AlreadyReleased();
+            if (existing.refunded) revert AlreadyRefunded();
             // Update existing
             existing.player1 = player1;
             existing.player2 = player2;
@@ -156,6 +169,8 @@ contract Escrow is Ownable, ReentrancyGuard {
             refunded: false,
             createdAt: block.timestamp
         });
+
+        emit MatchInitialized(matchId, player1, player2, amount);
     }
 
     /**
@@ -163,11 +178,11 @@ contract Escrow is Ownable, ReentrancyGuard {
      * @param matchId The match ID
      * @param amount Amount to deposit (must equal entry fee)
      */
-    function deposit(uint256 matchId, uint256 amount) external nonReentrant {
+    function deposit(uint256 matchId, uint256 amount) external nonReentrant whenNotPaused {
         if (matchId == 0) revert InvalidMatchId();
 
         MatchEscrow storage escrow = matchEscrows[matchId];
-        if (escrow.matchId == 0) revert InvalidMatchId();
+        if (escrow.matchId == 0) revert MatchNotFound();
 
         // Check if already released or refunded
         if (escrow.released) revert AlreadyReleased();
@@ -193,8 +208,7 @@ contract Escrow is Ownable, ReentrancyGuard {
         if (amount != escrow.amount) revert InvalidAmount();
 
         // Transfer USDC from player to contract
-        bool success = usdc.transferFrom(msg.sender, address(this), amount);
-        if (!success) revert TransferFailed();
+        usdc.safeTransferFrom(msg.sender, address(this), amount);
 
         // Update state
         if (isPlayer1) {
@@ -216,7 +230,7 @@ contract Escrow is Ownable, ReentrancyGuard {
     function releaseToWinner(
         uint256 matchId,
         address winner
-    ) external onlyOwnerOrTournament nonReentrant matchExists(matchId) {
+    ) external onlyOwnerOrTournament nonReentrant matchExists(matchId) whenNotPaused {
         MatchEscrow storage escrow = matchEscrows[matchId];
 
         if (escrow.released) revert AlreadyReleased();
@@ -233,8 +247,7 @@ contract Escrow is Ownable, ReentrancyGuard {
         uint256 amount = escrow.amount * 2; // Both players' deposits
 
         // Transfer USDC to winner
-        bool success = usdc.transfer(winner, amount);
-        if (!success) revert TransferFailed();
+        usdc.safeTransfer(winner, amount);
 
         // Update state
         escrow.released = true;
@@ -250,7 +263,7 @@ contract Escrow is Ownable, ReentrancyGuard {
      */
     function refundPlayers(
         uint256 matchId
-    ) external onlyOwnerOrTournament nonReentrant matchExists(matchId) {
+    ) external onlyOwnerOrTournament nonReentrant matchExists(matchId) whenNotPaused {
         MatchEscrow storage escrow = matchEscrows[matchId];
 
         if (escrow.released) revert AlreadyReleased();
@@ -261,16 +274,14 @@ contract Escrow is Ownable, ReentrancyGuard {
         // Refund Player 1
         if (escrow.player1Deposited) {
             refundAmount += escrow.amount;
-            bool success = usdc.transfer(escrow.player1, escrow.amount);
-            if (!success) revert TransferFailed();
+            usdc.safeTransfer(escrow.player1, escrow.amount);
             emit Refunded(matchId, escrow.player1, escrow.amount, block.timestamp);
         }
 
         // Refund Player 2
         if (escrow.player2Deposited) {
             refundAmount += escrow.amount;
-            bool success = usdc.transfer(escrow.player2, escrow.amount);
-            if (!success) revert TransferFailed();
+            usdc.safeTransfer(escrow.player2, escrow.amount);
             emit Refunded(matchId, escrow.player2, escrow.amount, block.timestamp);
         }
 
@@ -301,8 +312,7 @@ contract Escrow is Ownable, ReentrancyGuard {
 
         if (amount > excess) revert InvalidAmount();
 
-        bool success = usdc.transfer(to, amount);
-        if (!success) revert TransferFailed();
+        usdc.safeTransfer(to, amount);
     }
 
     // ─── VIEW FUNCTIONS ──────────────────────────────────────────────
@@ -364,6 +374,15 @@ contract Escrow is Ownable, ReentrancyGuard {
         return usdc.balanceOf(address(this));
     }
 
+    /**
+     * @notice Get match escrow details
+     * @param matchId The match ID
+     * @return MatchEscrow struct
+     */
+    function getMatchEscrow(uint256 matchId) external view returns (MatchEscrow memory) {
+        return matchEscrows[matchId];
+    }
+
     // ─── ADMIN FUNCTIONS ─────────────────────────────────────────────
 
     /**
@@ -371,7 +390,7 @@ contract Escrow is Ownable, ReentrancyGuard {
      * @param _tournamentContract New tournament contract address
      */
     function setTournamentContract(address _tournamentContract) external onlyOwner {
-        if (_tournamentContract == address(0)) revert InvalidAmount();
+        require(_tournamentContract != address(0), "Invalid address");
         address old = tournamentContract;
         tournamentContract = _tournamentContract;
         emit TournamentContractUpdated(old, _tournamentContract);
@@ -382,17 +401,12 @@ contract Escrow is Ownable, ReentrancyGuard {
      * @param _usdc New USDC token address
      */
     function setUSDC(address _usdc) external onlyOwner {
-        if (_usdc == address(0)) revert InvalidAmount();
+        require(_usdc != address(0), "Invalid address");
         address old = address(usdc);
         usdc = IERC20(_usdc);
         emit USDCUpdated(old, _usdc);
     }
 
-    /**
-     * @notice Pause/unpause deposits (emergency)
-     * @param paused Whether to pause
-     */
-    function setPaused(bool paused) external onlyOwner {
-        // Add pause functionality if needed
-    }
+    function pause() external onlyOwner { _pause(); }
+    function unpause() external onlyOwner { _unpause(); }
 }
