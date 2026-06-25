@@ -285,15 +285,27 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
   }, [aim, clientToSvg, executeThrow, cp]);
 
   // ============================================================
-  // ✅ FIXED: CPU auto-play is DISABLED
+  // ✅ FIXED: CPU animation listener - RE-ENABLED (NO toast warnings)
   // ============================================================
-  // The REMOTE_HIT_ANIMATION listener is removed to prevent
-  // automatic CPU throws. CPU must be controlled manually.
   useEffect(() => {
-    // CPU auto-play is disabled to prevent automatic turns
-    // Human player must manually throw darts
-    return () => {};
-  }, []);
+    const handleRemoteHit = (ev: any) => {
+      if (phaseRef.current !== 'idle') return;
+      const target = ev.detail?.target;
+      if (typeof target !== 'number') return;
+      
+      const pos = BOARD_LAYOUT.find((p) => p.number === target) || BOARD_LAYOUT[0];
+      const { dx, dy } = synthesizeSwipeFor({ ring: pos.ring, angle: pos.angle });
+      const pressX = CENTER;
+      const pressY = 660;
+      const landing = resolveSwipeLanding(pressX, pressY, pressX + dx, pressY + dy, false);
+      if (!landing) return;
+      
+      executeThrow(landing, ev.detail?.playerIdx ?? 1, pressX, pressY);
+    };
+    
+    window.addEventListener('REMOTE_HIT_ANIMATION' as any, handleRemoteHit);
+    return () => window.removeEventListener('REMOTE_HIT_ANIMATION' as any, handleRemoteHit);
+  }, [executeThrow]);
 
   const getHint = () => {
     if (disabled) return 'GAME PAUSED';
