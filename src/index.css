@@ -390,6 +390,59 @@ body.theme-midnight {
   }
 }
 
+/* ============================================================ */
+/* 🎯 DARTBOARD IMPROVEMENTS - Touch & Drag Support             */
+/* ============================================================ */
+
+/* Better touch experience for dartboard - allows swipe up on mobile and drag up on PC */
+.dartboard-container {
+  touch-action: none;
+  /* Prevents page scroll while aiming/swiping */
+  user-select: none;
+  /* Prevents text selection during drag */
+  -webkit-tap-highlight-color: transparent;
+  /* Removes blue flash on tap */
+  cursor: grab;
+  /* Shows grab cursor on PC */
+}
+
+.dartboard-container:active {
+  cursor: grabbing;
+  /* Shows grabbing cursor while dragging */
+}
+
+/* Prevent zoom on double-tap on mobile */
+.dartboard-container svg {
+  touch-action: none;
+  /* Prevents browser interference with touch events */
+}
+
+/* Ensure darts are clickable on mobile */
+@media (max-width: 640px) {
+  .dartboard-container svg {
+    touch-action: none;
+    /* Prevent scroll interference */
+  }
+
+  /* Larger touch area for numbers on mobile */
+  .dartboard-number {
+    cursor: pointer;
+  }
+}
+
+/* Smooth transitions for dart animations */
+.dart-flying {
+  transition: transform 0.56s cubic-bezier(0.2, 0.7, 0.4, 1);
+}
+
+/* Prevent dartboard from overflowing on very small screens */
+@media (max-width: 400px) {
+  .dartboard-wrapper svg {
+    transform: scale(0.9);
+    transform-origin: center;
+  }
+}
+
 /* Scrollbar styling for better visibility */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
@@ -408,4 +461,18 @@ body.theme-midnight {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================ */
+/* 🎯 DARTBOARD RESPONSIVE FIXES                                */
+/* ============================================================ */
+
+/* Ensure dartboard scales properly on all screen sizes */
+.dartboard-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
 }
