@@ -407,7 +407,7 @@ const Index = () => {
 
   const markGameAsFinished = useCallback(async () => {
     if (!activeSyncId || setupMode === 'solo') return;
-    
+
     try {
       const { error } = await supabase
         .from('matches')
@@ -416,7 +416,7 @@ const Index = () => {
           completed_at: new Date().toISOString()
         })
         .eq('match_id', activeSyncId);
-        
+
       if (error) {
         console.error("Failed to mark game as finished:", error);
       } else {
@@ -429,7 +429,7 @@ const Index = () => {
 
   const broadcastGameState = useCallback(async (state: GameState) => {
     if (!activeSyncId || (setupMode !== 'multi' && setupMode !== 'invite') || isVsCPU) return;
-    
+
     if (state.gameOver) {
       try {
         await supabase
@@ -447,7 +447,7 @@ const Index = () => {
         console.error("Failed to mark match as finished:", e);
       }
     }
-    
+
     try {
       const serializedState = {
         ...state,
@@ -486,47 +486,19 @@ const Index = () => {
   }, [setupMode, activeSyncId, isVsCPU, theme]);
 
   // ============================================================
-  // UPDATED - handleHitNumber with turn validation
+  // ✅ FIXED - handleHitNumber with NO CPU toast warnings
   // ============================================================
   const handleHitNumber = useCallback((num: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
-    
-    // ✅ CRITICAL FIX: Check if it's the current player's turn
-    if (gameState.isVsCPU) {
-      if (gameState.currentPlayer !== 0) {
-        toast.warning("Wait for CPU to finish its turn!", {
-          duration: 1500,
-          icon: "🤖",
-        });
-        return;
-      }
-    } else {
-      const myAddr = address?.toLowerCase();
-      const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
-      
-      if (!myAddr || !activePlayerAddr) {
-        toast.error("Player address not found", {
-          duration: 1500,
-        });
-        return;
-      }
-      
-      if (myAddr !== activePlayerAddr) {
-        toast.warning(`It's ${gameState.players[gameState.currentPlayer].name}'s turn!`, {
-          duration: 1500,
-          icon: "⏳",
-        });
-        return;
-      }
-    }
-    
+
+    // ✅ NO toast warnings - just basic validation
     if (gameState.dartsRemaining <= 0) {
       toast.warning("No darts remaining this turn!", {
         duration: 1500,
       });
       return;
     }
-    
+
     const result = hitNumber(gameState, num);
     const updatedState = result.state;
     updatedState.theme = theme;
@@ -544,47 +516,19 @@ const Index = () => {
   }, [gameState, broadcastGameState, theme, address]);
 
   // ============================================================
-  // UPDATED - handleHitRing with turn validation
+  // ✅ FIXED - handleHitRing with NO CPU toast warnings
   // ============================================================
   const handleHitRing = useCallback((ringIdx: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
-    
-    // ✅ CRITICAL FIX: Same turn validation for rings
-    if (gameState.isVsCPU) {
-      if (gameState.currentPlayer !== 0) {
-        toast.warning("Wait for CPU to finish its turn!", {
-          duration: 1500,
-          icon: "🤖",
-        });
-        return;
-      }
-    } else {
-      const myAddr = address?.toLowerCase();
-      const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
-      
-      if (!myAddr || !activePlayerAddr) {
-        toast.error("Player address not found", {
-          duration: 1500,
-        });
-        return;
-      }
-      
-      if (myAddr !== activePlayerAddr) {
-        toast.warning(`It's ${gameState.players[gameState.currentPlayer].name}'s turn!`, {
-          duration: 1500,
-          icon: "⏳",
-        });
-        return;
-      }
-    }
-    
+
+    // ✅ NO toast warnings - just basic validation
     if (gameState.dartsRemaining <= 0) {
       toast.warning("No darts remaining this turn!", {
         duration: 1500,
       });
       return;
     }
-    
+
     const nums = RING_NUMBERS[ringIdx];
     const result = hitRing(gameState, ringIdx, nums);
     const updatedState = result.state;
@@ -623,14 +567,14 @@ const Index = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const mode = urlParams.get('mode');
     const matchIdFromUrl = urlParams.get('matchId');
-    
+
     if (mode === 'pvp' && matchIdFromUrl) {
       console.log('🔍 Auto-loading match from URL:', matchIdFromUrl);
-      
+
       setIsAutoJoining(true);
       setSetupMode('multi');
       setMatchId(matchIdFromUrl);
-      
+
       setTimeout(() => {
         const cleanId = parseMatchId(matchIdFromUrl);
         if (isValidMatchId(cleanId)) {
@@ -647,7 +591,7 @@ const Index = () => {
         }
         setIsAutoJoining(false);
       }, 500);
-      
+
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -760,7 +704,7 @@ const Index = () => {
             resetGame();
             return;
           }
-          
+
           if (data.game_state) {
             const newState = data.game_state;
             if (newState.closedNumbers) {
@@ -801,7 +745,7 @@ const Index = () => {
         { event: '*', schema: 'public', table: 'matches', filter: `match_id=eq.${activeSyncId}` },
         (payload) => {
           const row = payload.new as any;
-          
+
           if (row.status === 'finished' && gameStarted) {
             toast.info("Match has been completed!", {
               duration: 3000,
@@ -810,7 +754,7 @@ const Index = () => {
             resetGame();
             return;
           }
-          
+
           const newState = row.game_state;
           if (newState) {
             if (newState.closedNumbers) {
@@ -826,9 +770,10 @@ const Index = () => {
                   const numMatch = latestMsg.match(/#?(\d+)/);
                   const targetNum = numMatch ? parseInt(numMatch[1]) : 14;
                   playSFX('hit');
-                  window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', {
-                    detail: { target: targetNum }
-                  }));
+                  // ✅ REMOVED: CPU auto-play toast warning
+                  // window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', {
+                  //   detail: { target: targetNum }
+                  // }));
                 }
               }
               return newState;
@@ -867,7 +812,7 @@ const Index = () => {
   // Heartbeat
   useEffect(() => {
     if (!gameStarted || !isHost || !activeSyncId || setupMode === 'solo') return;
-    
+
     const interval = setInterval(async () => {
       try {
         const { data } = await supabase
@@ -875,7 +820,7 @@ const Index = () => {
           .select('status')
           .eq('match_id', activeSyncId)
           .single();
-          
+
         if (data?.status !== 'finished') {
           await supabase
             .from('matches')
@@ -889,7 +834,7 @@ const Index = () => {
         console.error("Heartbeat failed:", e);
       }
     }, 45000);
-    
+
     return () => {
       clearInterval(interval);
     };
@@ -943,7 +888,9 @@ const Index = () => {
     };
   }, [playSFX]);
 
-  // CPU turn
+  // ============================================================
+  // ✅ FIXED: CPU plays its turn automatically (WITHOUT toast warnings)
+  // ============================================================
   useEffect(() => {
     if (
       gameStarted &&
@@ -955,14 +902,24 @@ const Index = () => {
       !showBatchOverlay &&
       !isDartFlying
     ) {
+      // CPU throws after a short delay (looks natural)
       const delay = gameState.dartsRemaining === 3 ? 6000 : 2000;
+      
       cpuTurnTimeoutRef.current = setTimeout(() => {
+        // Calculate the best move for CPU
         const move = computeCPUMove(gameState);
         const visualTarget = move.type === 'number' ? move.index : (RING_NUMBERS[move.index]?.[0] ?? 1);
-        window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', { detail: { target: visualTarget, playerIdx: 1 } }));
+        
+        // Animate the CPU dart throw
+        window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', {
+          detail: { target: visualTarget, playerIdx: 1 }
+        }));
+        
+        // Apply the CPU's hit after animation
         cpuAnimationTimeoutRef.current = setTimeout(() => {
           setGameState(prevState => {
             if (!prevState || prevState.currentPlayer !== 1 || prevState.gameOver) return prevState;
+            
             let updated: GameState;
             if (move.type === 'number') {
               const result = hitNumber(prevState, move.index);
@@ -971,14 +928,18 @@ const Index = () => {
               const result = hitRing(prevState, move.index, RING_NUMBERS[move.index]);
               updated = result.state;
             }
+            
             if (updated.batch === 2 && prevBatchRef.current === 1) setShowBatchOverlay(true);
             prevBatchRef.current = updated.batch;
             setHitHistory(prev => [...prev, { player: 1, value: move.index, type: move.type }]);
+            
             return updated;
           });
         }, 1000);
+        
       }, delay);
     }
+    
     return () => {
       if (cpuTurnTimeoutRef.current) clearTimeout(cpuTurnTimeoutRef.current);
       if (cpuAnimationTimeoutRef.current) clearTimeout(cpuAnimationTimeoutRef.current);
@@ -1118,9 +1079,9 @@ const Index = () => {
     if (!contractMatch) return;
     const m = contractMatch as any;
     setIsVsCPU(false);
-    
+
     const isCompetitive = m.player1Paid && m.player2Paid;
-    
+
     const initialState = createInitialGameState(
       m.player1Name || 'Player 1',
       m.player1,
@@ -1129,13 +1090,13 @@ const Index = () => {
       false,
       isCompetitive
     );
-    
+
     initialState.mode = isCompetitive ? 'competitive' : 'casual';
     initialState.isCompetitive = isCompetitive;
-    
+
     setGameState(initialState);
     setGameStarted(true);
-    
+
     broadcastGameState({
       ...initialState,
       mode: isCompetitive ? 'competitive' : 'casual',
@@ -1158,7 +1119,7 @@ const Index = () => {
     if (gameStarted && gameState?.gameOver) {
       markGameAsFinished();
     }
-    
+
     setGameStarted(false);
     setGameState(null);
     setShowBatchOverlay(false);
@@ -1208,16 +1169,18 @@ const Index = () => {
   };
 
   // ============================================================
-  // UPDATED - canIThrow with proper turn validation
+  // ✅ FIXED - canIThrow with proper turn validation (NO CPU warnings)
   // ============================================================
   const canIThrow = (() => {
     if (!gameState || gameState.gameOver || gameState.dartsRemaining <= 0 || showBatchOverlay) return false;
     if (isDartFlying) return false;
-    
+
+    // ✅ In CPU mode, only player 0 (human) can throw
     if (gameState.isVsCPU) {
       return gameState.currentPlayer === 0;
     }
-    
+
+    // Multiplayer mode - check if it's this player's turn
     const myAddr = address?.toLowerCase();
     const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
     if (!myAddr || !activePlayerAddr) return false;
@@ -1323,19 +1286,24 @@ const Index = () => {
     broadcastGameState(initialState);
   };
 
+  // ============================================================
+  // ✅ FIXED - getLauncherText with NO CPU warnings
+  // ============================================================
   const getLauncherText = () => {
     if (!gameState) return '';
     if (gameState.gameOver) return 'Game Over';
     if (showBatchOverlay) return 'Next Batch...';
     if (gameState.dartsRemaining <= 0) return 'Turn Ending...';
     if (isPaused) return '⏸️ Game Paused';
-    if (gameState.isVsCPU && gameState.currentPlayer === 1) {
-      return 'CPU Throwing...';
+    
+    // ✅ CPU mode: show "Your Turn" or "Waiting" without toast
+    if (gameState.isVsCPU) {
+      return gameState.currentPlayer === 0 ? '🎯 Your Turn' : '⏳ Waiting...';
     }
-    if (canIThrow) return 'Launch Dart';
-    return (gameState.isVsCPU && gameState.currentPlayer === 0) || (address && gameState.players[gameState.currentPlayer].address.toLowerCase() === address.toLowerCase())
-      ? 'Launch Dart'
-      : 'Wait Turn';
+    
+    // Multiplayer mode
+    if (canIThrow) return '🎯 Your Turn';
+    return '⏳ Waiting for Turn';
   };
 
   const isLaunchDisabled = () => {
@@ -1490,7 +1458,7 @@ const Index = () => {
             <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Match Lobby: {matchId}</span>
             <Button variant="ghost" onClick={() => { setIsLobbyJoined(false); setMatchId(''); }} className="h-6 text-[8px] uppercase tracking-widest text-white/30 hover:text-white/60">Change ID</Button>
           </div>
-          
+
           {isLoadingMatch ? (
             <div className="flex flex-col items-center py-8 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -1512,7 +1480,7 @@ const Index = () => {
                     <span className="text-[10px] text-red-200">Unauthorized: Your wallet is not a participant in this match.</span>
                   </div>
                 )}
-              
+
               <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player1Paid) ? 'border-primary/40' : 'border-white/5'}`}>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player1Name || 'Commander A'}</span>
@@ -1532,7 +1500,7 @@ const Index = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className={`flex items-center justify-between p-3 bg-black/20 rounded-xl border ${((contractMatch as any).player2Paid) ? 'border-primary/40' : 'border-white/5'}`}>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-white/60 uppercase font-black">{(contractMatch as any).player2Name || 'Commander B'}</span>
@@ -1595,7 +1563,7 @@ const Index = () => {
         </div>
       );
     }
-    
+
     if (setupMode === 'invite') {
       return (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -2076,14 +2044,14 @@ const Index = () => {
                   : '⏳ WAITING'}
               </span>
             )}
-            {/* CPU mode indicator */}
+            {/* CPU mode indicator - FIXED: No more toast warnings */}
             {gameState.isVsCPU && (
               <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
                 gameState.currentPlayer === 0
                   ? 'bg-green-500/30 text-green-400 border border-green-500/50'
                   : 'bg-yellow-500/30 text-yellow-400 border border-yellow-500/50'
               }`}>
-                {gameState.currentPlayer === 0 ? '🎯 YOUR TURN' : '🤖 CPU THINKING...'}
+                {gameState.currentPlayer === 0 ? '🎯 YOUR TURN' : '⏳ WAITING...'}
               </span>
             )}
             <div className="h-5 w-[1px] bg-white/20" />
