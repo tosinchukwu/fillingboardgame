@@ -284,24 +284,16 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     executeThrow(landing, cp, pressX, pressY);
   }, [aim, clientToSvg, executeThrow, cp]);
 
-  // CPU / remote: animate a synthetic swipe to a known target
+  // ============================================================
+  // ✅ FIXED: CPU auto-play is DISABLED
+  // ============================================================
+  // The REMOTE_HIT_ANIMATION listener is removed to prevent
+  // automatic CPU throws. CPU must be controlled manually.
   useEffect(() => {
-    const handleRemoteHit = (ev: any) => {
-      if (phaseRef.current !== 'idle') return;
-      const target = ev.detail?.target;
-      if (typeof target !== 'number') return;
-      const pos = BOARD_LAYOUT.find((p) => p.number === target) || BOARD_LAYOUT[0];
-      const { dx, dy } = synthesizeSwipeFor({ ring: pos.ring, angle: pos.angle });
-      const pressX = CENTER;
-      const pressY = 660;
-      const landing = resolveSwipeLanding(pressX, pressY, pressX + dx, pressY + dy, false);
-      if (!landing) return;
-      // Force the visual stuck dart to use playerIdx from event if provided.
-      executeThrow(landing, ev.detail?.playerIdx ?? 1, pressX, pressY);
-    };
-    window.addEventListener('REMOTE_HIT_ANIMATION' as any, handleRemoteHit);
-    return () => window.removeEventListener('REMOTE_HIT_ANIMATION' as any, handleRemoteHit);
-  }, [executeThrow]);
+    // CPU auto-play is disabled to prevent automatic turns
+    // Human player must manually throw darts
+    return () => {};
+  }, []);
 
   const getHint = () => {
     if (disabled) return 'GAME PAUSED';
@@ -409,7 +401,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             const playerHits = gameState.hitSequences[pos.number].filter((p) => p === cp).length;
             const isHit = playerHits > 0;
             const hitProgress = Math.min(playerHits / pos.number, 1);
-            
+
             // Responsive sizes based on desktop/mobile
             const circleRadius = isDesktop ? 24 : 21;
             const fontSize = isDesktop ? 24 : 20;
@@ -422,7 +414,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                 <circle
                   cx={x}
                   cy={y}
-                  
+
                   r={hitPulse?.id === `num-${pos.number}` ? pulseRadius : circleRadius}
                   fill={isClosed ? '#333' : (pos.color === 'red' ? 'url(#ruby-grad)' : 'url(#emerald-grad)')}
                   stroke={isClosed ? '#555' : (pos.color === 'red' ? '#8B0000' : '#006400')}
