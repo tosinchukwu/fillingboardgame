@@ -140,16 +140,9 @@ function synthesizeSwipeFor(target: { ring: number; angle: number }): { dx: numb
 const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing, disabled, isSpectator = false, turnSeconds = null, theme = 'avalanche' }) => {
   const colors = useTheme(theme);
   const cp = gameState.currentPlayer;
-    // 🔥 Desktop detection for responsive sizing
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // ✅ REMOVED: isDesktop logic - now uses same sizes on all devices
+  // The SVG CSS classes handle responsive sizing (w-[320px], sm:w-[380px], md:w-[450px])
 
   const [boardPhase, setBoardPhase] = useState<BoardPhase>('idle');
   const [stuckDarts, setStuckDarts] = useState<{ x: number; y: number; angle: number; tilt: number; playerIdx: number } | null>(null);
@@ -284,9 +277,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
     executeThrow(landing, cp, pressX, pressY);
   }, [aim, clientToSvg, executeThrow, cp]);
 
-  // ============================================================
-  // ✅ FIXED: CPU animation listener - RE-ENABLED (NO toast warnings)
-  // ============================================================
+  // CPU animation listener
   useEffect(() => {
     const handleRemoteHit = (ev: any) => {
       if (phaseRef.current !== 'idle') return;
@@ -326,6 +317,15 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
   const aimAngle = aim && swipeDist > 5
     ? (Math.atan2(aimDx, -aimDy) * 180) / Math.PI
     : 180;
+
+  // ✅ FIXED: Same sizes for ALL devices (no isDesktop)
+  const circleRadius = 21;
+  const fontSize = 20;
+  const pulseRadius = 24;
+  const progressRadius = 24;
+  const strokeWidth = 2;
+  const progressStrokeWidth = 3.5;
+
   return (
     <div className="relative flex flex-col items-center gap-2 select-none mt-0 pb-36 xl:pb-0 overflow-visible">
       <div
@@ -404,8 +404,8 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             />
           ))}
 
-          {/* ===== FIXED NUMBER RENDERING WITH PC SUPPORT ===== */}
-                    {BOARD_LAYOUT.map((pos) => {
+          {/* ===== NUMBER RENDERING - SAME ON ALL DEVICES ===== */}
+          {BOARD_LAYOUT.map((pos) => {
             const ringData = RING_RADII[pos.ring];
             const r = ringData.outer;
             const [x, y] = polarToXY(pos.angle, r);
@@ -414,44 +414,34 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
             const isHit = playerHits > 0;
             const hitProgress = Math.min(playerHits / pos.number, 1);
 
-            // Responsive sizes based on desktop/mobile
-            const circleRadius = isDesktop ? 24 : 21;
-            const fontSize = isDesktop ? 24 : 20;
-            const pulseRadius = isDesktop ? 28 : 24;
-            const progressRadius = isDesktop ? 28 : 24;
-
             return (
               <g key={pos.number}>
-                {/* MAIN NUMBER CIRCLE - FIXED FOR PC */}
+                {/* MAIN NUMBER CIRCLE - SAME SIZE ON ALL DEVICES */}
                 <circle
                   cx={x}
                   cy={y}
-
                   r={hitPulse?.id === `num-${pos.number}` ? pulseRadius : circleRadius}
                   fill={isClosed ? '#333' : (pos.color === 'red' ? 'url(#ruby-grad)' : 'url(#emerald-grad)')}
                   stroke={isClosed ? '#555' : (pos.color === 'red' ? '#8B0000' : '#006400')}
-                  strokeWidth={isDesktop ? '2.5' : '2'}
+                  strokeWidth={strokeWidth}
                   className={hitPulse?.id === `num-${pos.number}` ? 'animate-pulse' : ''}
                   style={{
                     transition: 'all 0.2s ease-out',
-                    // PC FIX: Solid color fallback when gradient fails
                     backgroundColor: isClosed ? '#333' : (pos.color === 'red' ? '#e63946' : '#2a9d8f'),
-                    // Force GPU rendering on PC
                     WebkitTransform: 'translateZ(0)',
                     transform: 'translateZ(0)',
-                    // Ensure visibility
                     opacity: 1,
                   }}
                 />
 
-                {/* PROGRESS RING */}
+                {/* PROGRESS RING - SAME ON ALL DEVICES */}
                 {!isClosed && isHit && (
                   <circle
                     cx={x} cy={y} 
                     r={progressRadius}
                     fill="none"
                     stroke={pos.color === 'red' ? '#e63946' : '#2a9d8f'}
-                    strokeWidth={isDesktop ? '4' : '3.5'}
+                    strokeWidth={progressStrokeWidth}
                     strokeDasharray={`${hitProgress * (2 * Math.PI * progressRadius)} ${2 * Math.PI * progressRadius}`}
                     transform={`rotate(-90 ${x} ${y})`}
                     strokeLinecap="round"
@@ -459,7 +449,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                   />
                 )}
 
-                {/* NUMBER TEXT */}
+                {/* NUMBER TEXT - SAME SIZE ON ALL DEVICES */}
                 <text
                   x={x}
                   y={y + 1}
@@ -475,7 +465,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
                       : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0,0,0,0.3)',
                     paintOrder: 'stroke fill',
                     stroke: isClosed ? 'none' : 'rgba(0,0,0,0.5)',
-                    strokeWidth: isDesktop ? '1.5px' : '1px',
+                    strokeWidth: '1px',
                     letterSpacing: '0.5px',
                     fontVariantNumeric: 'tabular-nums',
                     textRendering: 'geometricPrecision',
@@ -488,7 +478,7 @@ const Dartboard: React.FC<DartboardProps> = ({ gameState, onHitNumber, onHitRing
               </g>
             );
           })}
-          {/* ===== END FIXED NUMBER RENDERING ===== */}
+          {/* ===== END NUMBER RENDERING ===== */}
 
 
           {/* Stuck Darts */}
