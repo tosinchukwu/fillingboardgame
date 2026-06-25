@@ -9,36 +9,76 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// ─── CIRCLE API ─────────────────────────────────────────────────
+
 const CIRCLE_API_KEY = process.env.CIRCLE_API_KEY!;
 const CIRCLE_API_URL = process.env.CIRCLE_API_URL || 'https://api-sandbox.circle.com/v1/w3s';
+const CIRCLE_WALLET_ID = process.env.CIRCLE_WALLET_ID!;
 
 async function circleTransfer(toAddress: string, amount: number, matchId: string, type: string) {
-  const response = await axios.post(`${CIRCLE_API_URL}/developer/transactions/transfer`, {
-    idempotencyKey: `${matchId}-${type}-${Date.now()}`,
-    walletId: process.env.CIRCLE_WALLET_ID,
-    tokenId: 'usd-coin',
-    destinationAddress: toAddress,
-    amounts: [amount.toString()],
-    feeLevel: 'MEDIUM',
-  }, {
-    headers: {
-      Authorization: `Bearer ${CIRCLE_API_KEY}`,
-      'Content-Type': 'application/json',
+  const response = await axios.post(
+    `${CIRCLE_API_URL}/developer/transactions/transfer`,
+    {
+      idempotencyKey: `${matchId}-${type}-${Date.now()}`,
+      walletId: CIRCLE_WALLET_ID,
+      tokenId: 'usd-coin',
+      destinationAddress: toAddress,
+      amounts: [amount.toString()],
+      feeLevel: 'MEDIUM',
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${CIRCLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      }
     }
-  });
+  );
   return response.data;
 }
+
+// ─── ON-CHAIN VERIFICATION (Optional - for extra security) ────
+
+async function verifyOnChain(matchId: string, chainId: number) {
+  // This is OPTIONAL - you can skip this if you trust your game data
+  // But it adds an extra layer of security
+  
+  try {
+    // Use public RPC to verify match on-chain
+    const response = await axios.post(
+      process.env.RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc',
+      {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [
+          {
+            to: getContractAddress(chainId),
+            data: `0x...` // Encode getMatch call
+          },
+          'latest'
+        ],
+        id: 1
+      }
+    );
+    return response.data;
+  } catch (err) {
+    console.warn('[Verify] On-chain verification failed, using Supabase data');
+    return null;
+  }
+}
+
+// ─── HANDLER ────────────────────────────────────────────────────
 
 export default async function handler(request: Request): Promise<Response> {
   try {
     const cronSecret = request.headers.get('x-cron-secret') || request.headers.get('authorization');
-    
+
     if (cronSecret && cronSecret !== process.env.CRON_SECRET) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
 
     console.log('[Distributor] Starting reward distribution...');
 
+    // Get verified rewards that haven't been released
     const { data: rewards, error } = await supabase
       .from('escrow_rewards')
       .select('*')
@@ -47,6 +87,7 @@ export default async function handler(request: Request): Promise<Response> {
       .limit(10);
 
     if (error) throw error;
+
     if (!rewards || rewards.length === 0) {
       return new Response(JSON.stringify({
         status: "success",
@@ -60,6 +101,15 @@ export default async function handler(request: Request): Promise<Response> {
 
     for (const reward of rewards) {
       try {
+        console.log(`[Distributor] Sending USDC to winner for match: ${reward.match_id}`);
+
+        // ─── OPTIONAL: Verify on-chain before sending ──────────
+        // const onChainData = await verifyOnChain(reward.match_id, reward.chain_id || 43113);
+        // if (!onChainData || !onChainData.winner) {
+        //   throw new Error('On-chain verification failed');
+        // }
+
+        // ─── SEND REWARD VIA CIRCLE API ──────────────────────
         const winnerTx = await circleTransfer(
           reward.winner_address, 
           reward.winner_reward_usdc, 
@@ -77,6 +127,7 @@ export default async function handler(request: Request): Promise<Response> {
           );
         }
 
+        // ─── UPDATE SUPABASE ──────────────────────────────────
         await supabase
           .from('escrow_rewards')
           .update({
@@ -87,11 +138,31 @@ export default async function handler(request: Request): Promise<Response> {
           })
           .eq('match_id', reward.match_id);
 
-        success++;
-        console.log(`✅ Distributed rewards for match: ${reward.match_id}`);
+        // Update matches
+        await supabase
+          .from('matches')
+          .update({
+            reward_released: true,
+            reward_tx_hash: winnerTx?.data?.id || winnerTx?.id,
+            reward_released_at: new Date().toISOString(),
+          })
+          .eq('match_id', reward.match_id);
 
-      } catch (err) {
-        console.error(`Failed to distribute ${reward.match_id}:`, err);
+        success++;
+        console.log(`✅ USDC sent for match: ${reward.match_id}`);
+
+      } catch (err: any) {
+        console.error(`Failed to send USDC for ${reward.match_id}:`, err);
+        
+        await supabase
+          .from('escrow_rewards')
+          .update({
+            escrow_status: 'failed',
+            failure_reason: err.message || 'Unknown error',
+            failure_time: new Date().toISOString(),
+          })
+          .eq('match_id', reward.match_id);
+
         failed++;
       }
     }
