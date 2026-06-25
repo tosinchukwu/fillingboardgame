@@ -40,3 +40,48 @@
 .read-the-docs {
   color: #888;
 }
+
+/* ============================================================ */
+/* 🎯 DARTBOARD RESPONSIVE FIXES - EXTRA SAFETY                 */
+/* ============================================================ */
+
+/* Ensure dartboard scales properly on all screen sizes */
+.dartboard-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* Prevent dartboard from overflowing on very small screens */
+@media (max-width: 400px) {
+  .dartboard-wrapper svg {
+    transform: scale(0.9);
+    transform-origin: center;
+  }
+}
+
+/* Better touch experience for dartboard - allows swipe up on mobile and drag up on PC */
+.dartboard-container {
+  touch-action: none;
+  /* Prevents page scroll while aiming/swiping */
+  user-select: none;
+  /* Prevents text selection during drag */
+  -webkit-tap-highlight-color: transparent;
+  /* Removes blue flash on tap */
+  cursor: grab;
+  /* Shows grab cursor on PC */
+}
+
+.dartboard-container:active {
+  cursor: grabbing;
+  /* Shows grabbing cursor while dragging */
+}
+
+/* Prevent zoom on double-tap on mobile */
+.dartboard-container svg {
+  touch-action: none;
+  /* Prevents browser interference with touch events */
+}
