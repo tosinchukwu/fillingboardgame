@@ -125,7 +125,7 @@ export default async function handler(request: Request): Promise<Response> {
     for (const match of pendingMatches) {
       try {
         const matchId = match.match_id;
-        const chainId = match.payment_chain_id || 43113; // Use payment_chain_id from your schema
+        const chainId = match.payment_chain_id || 43113;
 
         console.log(`[VerifyBot] Verifying match: ${matchId} on chain ${chainId}`);
 
@@ -134,18 +134,6 @@ export default async function handler(request: Request): Promise<Response> {
 
         if (!onChainData) {
           console.log(`[VerifyBot] Failed to fetch on-chain data for ${matchId}`);
-          
-          // Update bot_verifications with failure
-          await supabase
-            .from('bot_verifications')
-            .insert({
-              match_id: matchId,
-              verification_status: 'failed',
-              error_message: 'Failed to fetch on-chain data',
-              retry_count: 1,
-              last_attempt_at: new Date().toISOString(),
-            });
-
           skipped++;
           continue;
         }
@@ -153,18 +141,6 @@ export default async function handler(request: Request): Promise<Response> {
         // ─── CHECK: Match completed on-chain? ─────────────────
         if (!onChainData.isCompleted) {
           console.log(`[VerifyBot] Match ${matchId} not completed on-chain`);
-          
-          await supabase
-            .from('bot_verifications')
-            .insert({
-              match_id: matchId,
-              verification_status: 'pending',
-              error_message: 'Match not completed on-chain',
-              on_chain_winner: null,
-              retry_count: 1,
-              last_attempt_at: new Date().toISOString(),
-            });
-
           skipped++;
           continue;
         }
@@ -173,18 +149,6 @@ export default async function handler(request: Request): Promise<Response> {
         const winnerAddress = onChainData.winner;
         if (!winnerAddress || winnerAddress === '0x0000000000000000000000000000000000000000') {
           console.log(`[VerifyBot] Match ${matchId} has no winner on-chain`);
-          
-          await supabase
-            .from('bot_verifications')
-            .insert({
-              match_id: matchId,
-              verification_status: 'pending',
-              error_message: 'No winner on-chain',
-              on_chain_winner: null,
-              retry_count: 1,
-              last_attempt_at: new Date().toISOString(),
-            });
-
           skipped++;
           continue;
         }
@@ -206,62 +170,34 @@ export default async function handler(request: Request): Promise<Response> {
               verified_at: new Date().toISOString(),
               verified_on_chain: true,
               verified_by: 'cron-bot',
-              reward_released: true, // No rewards for casual
+              reward_released: true,
             })
             .eq('match_id', matchId);
-
-          await supabase
-            .from('bot_verifications')
-            .insert({
-              match_id: matchId,
-              verification_status: 'verified',
-              verified_winner: winnerAddress,
-              on_chain_winner: winnerAddress,
-              supabase_winner: winnerAddress,
-              winner_match_flag: true,
-              verification_timestamp: new Date().toISOString(),
-              verified_at: new Date().toISOString(),
-            });
 
           verified++;
           continue;
         }
 
         // ─── CALCULATE REWARDS ────────────────────────────────
-        // Use USDC escrow amount if available
         let totalPool = 0;
         let useUSDC = false;
 
         if (onChainData.escrowTotalAmount && onChainData.escrowTotalAmount > 0n) {
-          // USDC has 6 decimals
           totalPool = Number(onChainData.escrowTotalAmount) / 1_000_000;
           useUSDC = true;
         } else {
-          // Fallback to entry fee from matches table
           totalPool = Number(match.total_entry_fees || match.entry_fee_usdc || 0);
-          useUSDC = true; // Default to USDC
+          useUSDC = true;
         }
 
         if (totalPool <= 0) {
           console.log(`[VerifyBot] Match ${matchId} has zero pool - skipping`);
-          
-          await supabase
-            .from('bot_verifications')
-            .insert({
-              match_id: matchId,
-              verification_status: 'failed',
-              error_message: 'Zero pool amount',
-              retry_count: 1,
-              last_attempt_at: new Date().toISOString(),
-            });
-
           skipped++;
           continue;
         }
 
-        const winnerReward = Math.floor(totalPool * 0.60); // 60% to winner
-        const platformFee = Math.floor(totalPool * 0.10); // 10% platform fee
-        // Remaining 30% goes to runner-up or back to treasury
+        const winnerReward = Math.floor(totalPool * 0.60);
+        const platformFee = Math.floor(totalPool * 0.10);
 
         console.log(`[VerifyBot] Match ${matchId}: Pool = ${totalPool} USDC, Winner = ${winnerReward}`);
 
@@ -273,7 +209,7 @@ export default async function handler(request: Request): Promise<Response> {
             winner_address: winnerAddress,
             winner_address_name: onChainData.winnerName,
             winner_reward_usdc: winnerReward,
-            runner_up_reward_usdc: 0, // No runner-up for now
+            runner_up_reward_usdc: 0,
             platform_fee_usdc: platformFee,
             total_pool: totalPool,
             escrow_status: 'verified',
@@ -289,17 +225,6 @@ export default async function handler(request: Request): Promise<Response> {
 
         if (insertError) {
           console.error(`[VerifyBot] Failed to insert escrow_rewards for ${matchId}:`, insertError);
-          
-          await supabase
-            .from('bot_verifications')
-            .insert({
-              match_id: matchId,
-              verification_status: 'failed',
-              error_message: insertError.message,
-              retry_count: 1,
-              last_attempt_at: new Date().toISOString(),
-            });
-
           failed++;
           continue;
         }
@@ -318,42 +243,15 @@ export default async function handler(request: Request): Promise<Response> {
           })
           .eq('match_id', matchId);
 
-        // ─── INSERT INTO BOT_VERIFICATIONS ──────────────────
-        await supabase
-          .from('bot_verifications')
-          .insert({
-            match_id: matchId,
-            verification_status: 'verified',
-            verified_winner: winnerAddress,
-            on_chain_winner: winnerAddress,
-            supabase_winner: winnerAddress,
-            winner_match_flag: true,
-            verification_timestamp: new Date().toISOString(),
-            verified_at: new Date().toISOString(),
-          });
-
         verified++;
         console.log(`✅ Verified match: ${matchId} | Winner: ${winnerAddress} | Reward: ${winnerReward} USDC`);
 
       } catch (err: any) {
         console.error(`Failed match ${match.match_id}:`, err);
-        
-        // Log failure in bot_verifications
-        await supabase
-          .from('bot_verifications')
-          .insert({
-            match_id: match.match_id,
-            verification_status: 'failed',
-            error_message: err.message || 'Unknown error',
-            retry_count: 1,
-            last_attempt_at: new Date().toISOString(),
-          });
-
         failed++;
       }
     }
 
-    // ─── RETURN RESPONSE ──────────────────────────────────────
     return new Response(JSON.stringify({
       status: "success",
       message: "Verification cycle completed",
