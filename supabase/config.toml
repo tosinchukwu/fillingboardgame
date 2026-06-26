@@ -6,8 +6,9 @@
 # ─────────────────────────────────────────────────────────────────────
 
 [project]
-# Your Supabase project ID (get from: https://app.supabase.com/project/[project-id]/settings/general)
-project_id = "your-project-id-here"
+# Your Supabase project ID
+# Get from: https://app.supabase.com/project/[project-id]/settings/general
+project_id = "owixuzehqiwfrfzitjoe"
 
 # ─────────────────────────────────────────────────────────────────────
 # API CONFIGURATION
@@ -32,7 +33,7 @@ max_rows = 1000
 port = 54322
 # Shadow database port for migrations
 shadow_port = 54320
-# Database major version (must match remote database)
+# Database major version
 major_version = 15
 
 [db.pooler]
@@ -64,14 +65,8 @@ enabled = true
 site_url = "http://localhost:3000"
 # Additional redirect URLs
 additional_redirect_urls = ["https://localhost:3000"]
-# JWT expiry in seconds (max 604800)
+# JWT expiry in seconds
 jwt_expiry = 3600
-# Enable manual linking of accounts
-enable_manual_linking = false
-# Enable refresh token rotation
-enable_refresh_token_rotation = true
-# Refresh token reuse interval in seconds
-refresh_token_reuse_interval = 10
 # Enable new user signups
 enable_signup = true
 # Enable anonymous sign-ins
@@ -84,21 +79,10 @@ enable_signup = true
 double_confirm_changes = true
 # Require email confirmation before sign in
 enable_confirmations = false
-# Require current password for password changes
-secure_password_change = false
-# OTP length (6-10 digits)
+# OTP length
 otp_length = 6
 # OTP expiry in seconds
 otp_expiry = 3600
-
-[auth.email.smtp]
-# SMTP server configuration (local development)
-host = "inbucket"
-port = 2500
-user = ""
-pass = ""
-admin_email = "admin@email.com"
-sender_name = "Admin"
 
 [auth.sms]
 # Enable SMS signups
@@ -108,12 +92,12 @@ enable_confirmations = false
 
 [auth.rate_limit]
 # Rate limits per IP address
-email_sent = 2        # Emails per hour
-sms_sent = 30         # SMS per hour
-anonymous_users = 30  # Anonymous sign-ins per hour
-token_refresh = 150   # Token refreshes per 5 minutes
-sign_in_sign_ups = 30 # Sign-in/sign-ups per 5 minutes
-token_verifications = 30 # OTP verifications per 5 minutes
+email_sent = 2
+sms_sent = 30
+anonymous_users = 30
+token_refresh = 150
+sign_in_sign_ups = 30
+token_verifications = 30
 
 # ─────────────────────────────────────────────────────────────────────
 # STUDIO DASHBOARD CONFIGURATION
@@ -134,7 +118,7 @@ api_url = "http://localhost"
 [realtime]
 # Enable Realtime service
 enabled = true
-# IP version (IPv4 or IPv6)
+# IP version
 ip_version = "IPv6"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -144,7 +128,7 @@ ip_version = "IPv6"
 [storage]
 # Enable Storage service
 enabled = true
-# Maximum file size (e.g., 50MiB, 100MB)
+# Maximum file size
 file_size_limit = "50MiB"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -154,34 +138,29 @@ file_size_limit = "50MiB"
 [edge_runtime]
 # Enable Edge Runtime
 enabled = true
-# Request handling policy (oneshot or per_worker)
+# Request handling policy
 policy = "oneshot"
 # Chrome inspector port for debugging
 inspector_port = 8083
 
 # ─────────────────────────────────────────────────────────────────────
-# EDGE FUNCTIONS
+# EDGE FUNCTIONS (Custom Configuration)
 # ─────────────────────────────────────────────────────────────────────
 
-# ── verify-game-result (Switchboard score packer) ──────────────────
+# ── verify-game-result ─────────────────────────────────────────────
 [functions.verify-game-result]
 # Public access for Switchboard integration
 verify_jwt = false
-# No cron schedule - called manually via HTTP
 
-# ── verify-results (On-chain verification) ─────────────────────────
+# ── verify-results ──────────────────────────────────────────────────
 [functions.verify-results]
-# Cron uses x-cron-secret header for auth, not JWT
+# Cron uses x-cron-secret header
 verify_jwt = false
-# Run every 30 seconds
-cron = "*/30 * * * * *"
 
-# ── distribute-rewards (USDC distribution via Circle) ──────────────
+# ── distribute-rewards ──────────────────────────────────────────────
 [functions.distribute-rewards]
-# Cron uses x-cron-secret header for auth, not JWT
+# Cron uses x-cron-secret header
 verify_jwt = false
-# Run every 30 seconds
-cron = "*/30 * * * * *"
 
 # ─────────────────────────────────────────────────────────────────────
 # ANALYTICS CONFIGURATION
@@ -194,7 +173,7 @@ enabled = false
 port = 54327
 # Vector ingest port
 vector_port = 54328
-# Backend (postgres or bigquery)
+# Backend
 backend = "postgres"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -214,21 +193,3 @@ pop3_port = 54326
 admin_email = "admin@email.com"
 # Sender name
 sender_name = "Admin"
-
-# ─────────────────────────────────────────────────────────────────────
-# EXPERIMENTAL FEATURES
-# ─────────────────────────────────────────────────────────────────────
-
-[experimental]
-# Webhooks (experimental)
-webhooks_enabled = false
-# OrioleDB storage (experimental)
-orioledb_version = ""
-
-# ─────────────────────────────────────────────────────────────────────
-# BRANCHING / REMOTE CONFIGURATION
-# ─────────────────────────────────────────────────────────────────────
-
-# Configure remote branches for preview deployments
-# [remotes.staging]
-# project_id = "your-staging-project-id"
