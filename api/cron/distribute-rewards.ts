@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ─── CIRCLE API ─────────────────────────────────────────────────
+//─── CIRCLE API ─────────────────────────────────────────────────
 
 const CIRCLE_API_KEY = process.env.CIRCLE_API_KEY!;
 const CIRCLE_API_URL = process.env.CIRCLE_API_URL || 'https://api-sandbox.circle.com/v1/w3s';
