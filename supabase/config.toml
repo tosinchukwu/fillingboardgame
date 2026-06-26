@@ -5,9 +5,6 @@
 # PROJECT CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────
 
-[project]
-# Your Supabase project ID
-# Get from: https://app.supabase.com/project/[project-id]/settings/general
 project_id = "owixuzehqiwfrfzitjoe"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -15,13 +12,9 @@ project_id = "owixuzehqiwfrfzitjoe"
 # ─────────────────────────────────────────────────────────────────────
 
 [api]
-# Port for local API server
 port = 54321
-# Schemas to expose in your API
 schemas = ["public", "storage", "graphql_public"]
-# Extra schemas to add to the search_path
 extra_search_path = ["public", "extensions"]
-# Maximum rows returned from a query
 max_rows = 1000
 
 # ─────────────────────────────────────────────────────────────────────
@@ -29,29 +22,19 @@ max_rows = 1000
 # ─────────────────────────────────────────────────────────────────────
 
 [db]
-# Port for local PostgreSQL
 port = 54322
-# Shadow database port for migrations
 shadow_port = 54320
-# Database major version
 major_version = 15
 
 [db.pooler]
-# Enable connection pooler
 enabled = false
-# Port for connection pooler
 port = 54329
-# Pool mode (transaction or session)
 pool_mode = "transaction"
-# Default pool size
 default_pool_size = 20
-# Max client connections
 max_client_conn = 100
 
 [db.seed]
-# Enable seed data
 enabled = true
-# Seed file paths
 sql_paths = ["./seed.sql"]
 
 # ─────────────────────────────────────────────────────────────────────
@@ -59,39 +42,25 @@ sql_paths = ["./seed.sql"]
 # ─────────────────────────────────────────────────────────────────────
 
 [auth]
-# Enable auth service
 enabled = true
-# Site URL for redirects
 site_url = "http://localhost:3000"
-# Additional redirect URLs
 additional_redirect_urls = ["https://localhost:3000"]
-# JWT expiry in seconds
 jwt_expiry = 3600
-# Enable new user signups
 enable_signup = true
-# Enable anonymous sign-ins
 enable_anonymous_sign_ins = false
 
 [auth.email]
-# Enable email signups
 enable_signup = true
-# Require confirmation for email changes
 double_confirm_changes = true
-# Require email confirmation before sign in
 enable_confirmations = false
-# OTP length
 otp_length = 6
-# OTP expiry in seconds
 otp_expiry = 3600
 
 [auth.sms]
-# Enable SMS signups
 enable_signup = true
-# Require SMS confirmation before sign in
 enable_confirmations = false
 
 [auth.rate_limit]
-# Rate limits per IP address
 email_sent = 2
 sms_sent = 30
 anonymous_users = 30
@@ -104,11 +73,8 @@ token_verifications = 30
 # ─────────────────────────────────────────────────────────────────────
 
 [studio]
-# Enable Studio UI
 enabled = true
-# Port for Studio UI
 port = 54323
-# API URL for Studio
 api_url = "http://localhost"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -116,9 +82,7 @@ api_url = "http://localhost"
 # ─────────────────────────────────────────────────────────────────────
 
 [realtime]
-# Enable Realtime service
 enabled = true
-# IP version
 ip_version = "IPv6"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -126,9 +90,7 @@ ip_version = "IPv6"
 # ─────────────────────────────────────────────────────────────────────
 
 [storage]
-# Enable Storage service
 enabled = true
-# Maximum file size
 file_size_limit = "50MiB"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -136,11 +98,8 @@ file_size_limit = "50MiB"
 # ─────────────────────────────────────────────────────────────────────
 
 [edge_runtime]
-# Enable Edge Runtime
 enabled = true
-# Request handling policy
 policy = "oneshot"
-# Chrome inspector port for debugging
 inspector_port = 8083
 
 # ─────────────────────────────────────────────────────────────────────
@@ -149,17 +108,14 @@ inspector_port = 8083
 
 # ── verify-game-result ─────────────────────────────────────────────
 [functions.verify-game-result]
-# Public access for Switchboard integration
 verify_jwt = false
 
 # ── verify-results ──────────────────────────────────────────────────
 [functions.verify-results]
-# Cron uses x-cron-secret header
 verify_jwt = false
 
 # ── distribute-rewards ──────────────────────────────────────────────
 [functions.distribute-rewards]
-# Cron uses x-cron-secret header
 verify_jwt = false
 
 # ─────────────────────────────────────────────────────────────────────
@@ -167,13 +123,9 @@ verify_jwt = false
 # ─────────────────────────────────────────────────────────────────────
 
 [analytics]
-# Enable Logflare service (local development)
 enabled = false
-# Port for Logflare
 port = 54327
-# Vector ingest port
 vector_port = 54328
-# Backend
 backend = "postgres"
 
 # ─────────────────────────────────────────────────────────────────────
@@ -181,15 +133,9 @@ backend = "postgres"
 # ─────────────────────────────────────────────────────────────────────
 
 [inbucket]
-# Enable InBucket email testing
 enabled = true
-# Web interface port
 port = 54324
-# SMTP port
 smtp_port = 54325
-# POP3 port
 pop3_port = 54326
-# Admin email
 admin_email = "admin@email.com"
-# Sender name
 sender_name = "Admin"
