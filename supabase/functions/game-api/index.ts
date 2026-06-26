@@ -1,42 +1,84 @@
-import { Hono, Context } from 'https://deno.land/x/hono@v3.11.7/mod.ts'
-import { cors } from 'https://deno.land/x/hono@v3.11.7/middleware.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
-import { hitNumber, hitRing } from './gameLogic.ts'
-import { RING_NUMBERS } from './boardLayout.ts'
+// supabase/functions/game-api/index.ts
+// @ts-nocheck
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 
-const app = new Hono().basePath('/game-api')
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-app.use('*', cors())
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') || '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+);
 
-// Global Error Handler
-app.onError((err: Error, c: Context) => {
-  console.error(`[API FATAL] ${err.message}`);
-  return c.json({ 
-    error: "Internal Server Error", 
-    message: err.message 
-  }, 500)
-})
-
-// Lazy Supabase Client Initialization
-let _supabase: any = null;
-function getSupabase() {
-  if (_supabase) return _supabase;
-  
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-  // For edge functions, use SERVICE_ROLE_KEY for admin operations
-  // Falls back to PUBLISHABLE_KEY if service role not available
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || '';
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Missing Supabase credentials (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY or SUPABASE_PUBLISHABLE_KEY)");
+Deno.serve(async (req: Request) => {
+  // ─── CORS ──────────────────────────────────────────────────
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  _supabase = createClient(supabaseUrl, supabaseKey);
-  return _supabase;
-}
+  try {
+    const url = new URL(req.url);
+    const path = url.pathname.split('/').pop();
 
-app.get('/', (c: Context) => {
-  return c.json({
-    name: "Filling Game Agent API",
-    version: "1.0.2",
-    description: "Live API for AI agents to play Filling Game darts.",
+    // ─── HEALTH CHECK ──────────────────────────────────────
+    if (path === 'health') {
+      return new Response(JSON.stringify({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        message: 'Game API is running (AI agents disabled)'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'content-type': 'application/json' }
+      });
+    }
+
+    // ─── GET MATCH ──────────────────────────────────────────
+    if (path === 'match') {
+      const matchId = url.searchParams.get('matchId');
+      
+      if (!matchId) {
+        return new Response(JSON.stringify({ error: 'matchId required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'content-type': 'application/json' }
+        });
+      }
+
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('match_id', matchId)
+        .single();
+
+      if (error || !data) {
+        return new Response(JSON.stringify({ error: 'Match not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'content-type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { ...corsHeaders, 'content-type': 'application/json' }
+      });
+    }
+
+    // ─── DEFAULT ────────────────────────────────────────────
+    return new Response(JSON.stringify({ 
+      error: 'Not found',
+      available: ['/health', '/match?matchId=XXX']
+    }), {
+      status: 404,
+      headers: { ...corsHeaders, 'content-type': 'application/json' }
+    });
+
+  } catch (e) {
+    console.error('[GameAPI] Error:', e);
+    return new Response(JSON.stringify({ error: String(e?.message ?? e) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'content-type': 'application/json' }
+    });
+  }
+});
