@@ -1,6 +1,7 @@
 // api/cron/distribute-rewards.ts
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
+import { getContractAddress, getEscrowAddress, ESCROW_ABI, TOURNAMENT_ABI } from '@/lib/contracts';
 
 export const config = { runtime: 'edge' };
 
@@ -36,36 +37,6 @@ async function circleTransfer(toAddress: string, amount: number, matchId: string
   return response.data;
 }
 
-// ─── ON-CHAIN VERIFICATION (Optional - for extra security) ────
-
-async function verifyOnChain(matchId: string, chainId: number) {
-  // This is OPTIONAL - you can skip this if you trust your game data
-  // But it adds an extra layer of security
-  
-  try {
-    // Use public RPC to verify match on-chain
-    const response = await axios.post(
-      process.env.RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc',
-      {
-        jsonrpc: '2.0',
-        method: 'eth_call',
-        params: [
-          {
-            to: getContractAddress(chainId),
-            data: `0x...` // Encode getMatch call
-          },
-          'latest'
-        ],
-        id: 1
-      }
-    );
-    return response.data;
-  } catch (err) {
-    console.warn('[Verify] On-chain verification failed, using Supabase data');
-    return null;
-  }
-}
-
 // ─── HANDLER ────────────────────────────────────────────────────
 
 export default async function handler(request: Request): Promise<Response> {
@@ -92,7 +63,8 @@ export default async function handler(request: Request): Promise<Response> {
       return new Response(JSON.stringify({
         status: "success",
         message: "No rewards ready for distribution",
-        processed: 0
+        processed: 0,
+        timestamp: new Date().toISOString()
       }), { status: 200 });
     }
 
@@ -103,13 +75,7 @@ export default async function handler(request: Request): Promise<Response> {
       try {
         console.log(`[Distributor] Sending USDC to winner for match: ${reward.match_id}`);
 
-        // ─── OPTIONAL: Verify on-chain before sending ──────────
-        // const onChainData = await verifyOnChain(reward.match_id, reward.chain_id || 43113);
-        // if (!onChainData || !onChainData.winner) {
-        //   throw new Error('On-chain verification failed');
-        // }
-
-        // ─── SEND REWARD VIA CIRCLE API ──────────────────────
+        // ─── SEND REWARD VIA CIRCLE API ──────────────────────────
         const winnerTx = await circleTransfer(
           reward.winner_address, 
           reward.winner_reward_usdc, 
@@ -127,7 +93,7 @@ export default async function handler(request: Request): Promise<Response> {
           );
         }
 
-        // ─── UPDATE SUPABASE ──────────────────────────────────
+        // ─── UPDATE SUPABASE ──────────────────────────────────────
         await supabase
           .from('escrow_rewards')
           .update({
@@ -169,13 +135,18 @@ export default async function handler(request: Request): Promise<Response> {
 
     return new Response(JSON.stringify({
       status: "success",
+      message: "Distribution cycle completed",
       processed: rewards.length,
       success,
-      failed
+      failed,
+      timestamp: new Date().toISOString()
     }), { status: 200 });
 
   } catch (err: any) {
     console.error("[Distributor Critical Error]", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ 
+      error: err.message,
+      timestamp: new Date().toISOString()
+    }), { status: 500 });
   }
 }
