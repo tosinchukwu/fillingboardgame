@@ -1,7 +1,6 @@
 // api/cron/distribute-rewards.ts
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
-import { getContractAddress, getEscrowAddress, ESCROW_ABI, TOURNAMENT_ABI } from '@/lib/contracts';
 
 export const config = { runtime: 'edge' };
 
@@ -49,7 +48,7 @@ export default async function handler(request: Request): Promise<Response> {
 
     console.log('[Distributor] Starting reward distribution...');
 
-    // Get verified rewards that haven't been released
+    // ─── GET VERIFIED REWARDS ──────────────────────────────────
     const { data: rewards, error } = await supabase
       .from('escrow_rewards')
       .select('*')
@@ -68,12 +67,16 @@ export default async function handler(request: Request): Promise<Response> {
       }), { status: 200 });
     }
 
+    console.log(`[Distributor] Found ${rewards.length} rewards to distribute`);
+
     let success = 0;
     let failed = 0;
 
     for (const reward of rewards) {
       try {
-        console.log(`[Distributor] Sending USDC to winner for match: ${reward.match_id}`);
+        console.log(`[Distributor] Processing match: ${reward.match_id}`);
+        console.log(`  → Winner: ${reward.winner_address}`);
+        console.log(`  → Amount: ${reward.winner_reward_usdc} USDC`);
 
         // ─── SEND REWARD VIA CIRCLE API ──────────────────────────
         const winnerTx = await circleTransfer(
@@ -93,7 +96,7 @@ export default async function handler(request: Request): Promise<Response> {
           );
         }
 
-        // ─── UPDATE SUPABASE ──────────────────────────────────────
+        // ─── UPDATE ESCROW_REWARDS ──────────────────────────────
         await supabase
           .from('escrow_rewards')
           .update({
@@ -104,7 +107,7 @@ export default async function handler(request: Request): Promise<Response> {
           })
           .eq('match_id', reward.match_id);
 
-        // Update matches
+        // ─── UPDATE MATCHES ──────────────────────────────────────
         await supabase
           .from('matches')
           .update({
@@ -115,10 +118,10 @@ export default async function handler(request: Request): Promise<Response> {
           .eq('match_id', reward.match_id);
 
         success++;
-        console.log(`✅ USDC sent for match: ${reward.match_id}`);
+        console.log(`✅ USDC sent for match: ${reward.match_id} (TX: ${winnerTx?.data?.id || winnerTx?.id})`);
 
       } catch (err: any) {
-        console.error(`Failed to send USDC for ${reward.match_id}:`, err);
+        console.error(`❌ Failed to send USDC for ${reward.match_id}:`, err.message);
         
         await supabase
           .from('escrow_rewards')
@@ -133,6 +136,7 @@ export default async function handler(request: Request): Promise<Response> {
       }
     }
 
+    // ─── RETURN RESPONSE ──────────────────────────────────────
     return new Response(JSON.stringify({
       status: "success",
       message: "Distribution cycle completed",
