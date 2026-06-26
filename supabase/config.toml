@@ -1,25 +1,234 @@
-# Supabase Project Configuration
+# supabase/config.toml
 # Reference: https://supabase.com/docs/reference/cli/config
 
+# ─────────────────────────────────────────────────────────────────────
+# PROJECT CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
 [project]
-# Your Supabase project configuration
-# Get these values from: https://app.supabase.com/project/[project-id]/settings/general
+# Your Supabase project ID (get from: https://app.supabase.com/project/[project-id]/settings/general)
+project_id = "your-project-id-here"
+
+# ─────────────────────────────────────────────────────────────────────
+# API CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
 
 [api]
 # Port for local API server
 port = 54321
+# Schemas to expose in your API
+schemas = ["public", "storage", "graphql_public"]
+# Extra schemas to add to the search_path
+extra_search_path = ["public", "extensions"]
+# Maximum rows returned from a query
+max_rows = 1000
+
+# ─────────────────────────────────────────────────────────────────────
+# DATABASE CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
 
 [db]
 # Port for local PostgreSQL
 port = 54322
-# Shadow database for migrations
-shadow_port = 54323
+# Shadow database port for migrations
+shadow_port = 54320
+# Database major version (must match remote database)
+major_version = 15
+
+[db.pooler]
+# Enable connection pooler
+enabled = false
+# Port for connection pooler
+port = 54329
+# Pool mode (transaction or session)
+pool_mode = "transaction"
+# Default pool size
+default_pool_size = 20
+# Max client connections
+max_client_conn = 100
+
+[db.seed]
+# Enable seed data
+enabled = true
+# Seed file paths
+sql_paths = ["./seed.sql"]
+
+# ─────────────────────────────────────────────────────────────────────
+# AUTH CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+[auth]
+# Enable auth service
+enabled = true
+# Site URL for redirects
+site_url = "http://localhost:3000"
+# Additional redirect URLs
+additional_redirect_urls = ["https://localhost:3000"]
+# JWT expiry in seconds (max 604800)
+jwt_expiry = 3600
+# Enable manual linking of accounts
+enable_manual_linking = false
+# Enable refresh token rotation
+enable_refresh_token_rotation = true
+# Refresh token reuse interval in seconds
+refresh_token_reuse_interval = 10
+# Enable new user signups
+enable_signup = true
+# Enable anonymous sign-ins
+enable_anonymous_sign_ins = false
+
+[auth.email]
+# Enable email signups
+enable_signup = true
+# Require confirmation for email changes
+double_confirm_changes = true
+# Require email confirmation before sign in
+enable_confirmations = false
+# Require current password for password changes
+secure_password_change = false
+# OTP length (6-10 digits)
+otp_length = 6
+# OTP expiry in seconds
+otp_expiry = 3600
+
+[auth.email.smtp]
+# SMTP server configuration (local development)
+host = "inbucket"
+port = 2500
+user = ""
+pass = ""
+admin_email = "admin@email.com"
+sender_name = "Admin"
+
+[auth.sms]
+# Enable SMS signups
+enable_signup = true
+# Require SMS confirmation before sign in
+enable_confirmations = false
+
+[auth.rate_limit]
+# Rate limits per IP address
+email_sent = 2        # Emails per hour
+sms_sent = 30         # SMS per hour
+anonymous_users = 30  # Anonymous sign-ins per hour
+token_refresh = 150   # Token refreshes per 5 minutes
+sign_in_sign_ups = 30 # Sign-in/sign-ups per 5 minutes
+token_verifications = 30 # OTP verifications per 5 minutes
+
+# ─────────────────────────────────────────────────────────────────────
+# STUDIO DASHBOARD CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
 
 [studio]
-# Port for Supabase Studio UI
+# Enable Studio UI
+enabled = true
+# Port for Studio UI
 port = 54323
+# API URL for Studio
+api_url = "http://localhost"
 
-[functions.game-api]
-# Edge Function configuration for game-api
-# Learn more: https://supabase.com/docs/guides/functions/deployment
-verify_jwt = false  # Allow public access for game API (no authentication required)
+# ─────────────────────────────────────────────────────────────────────
+# REALTIME CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+[realtime]
+# Enable Realtime service
+enabled = true
+# IP version (IPv4 or IPv6)
+ip_version = "IPv6"
+
+# ─────────────────────────────────────────────────────────────────────
+# STORAGE CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+[storage]
+# Enable Storage service
+enabled = true
+# Maximum file size (e.g., 50MiB, 100MB)
+file_size_limit = "50MiB"
+
+# ─────────────────────────────────────────────────────────────────────
+# EDGE FUNCTIONS CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+[edge_runtime]
+# Enable Edge Runtime
+enabled = true
+# Request handling policy (oneshot or per_worker)
+policy = "oneshot"
+# Chrome inspector port for debugging
+inspector_port = 8083
+
+# ─────────────────────────────────────────────────────────────────────
+# EDGE FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────
+
+# ── verify-game-result (Switchboard score packer) ──────────────────
+[functions.verify-game-result]
+# Public access for Switchboard integration
+verify_jwt = false
+# No cron schedule - called manually via HTTP
+
+# ── verify-results (On-chain verification) ─────────────────────────
+[functions.verify-results]
+# Cron uses x-cron-secret header for auth, not JWT
+verify_jwt = false
+# Run every 30 seconds
+cron = "*/30 * * * * *"
+
+# ── distribute-rewards (USDC distribution via Circle) ──────────────
+[functions.distribute-rewards]
+# Cron uses x-cron-secret header for auth, not JWT
+verify_jwt = false
+# Run every 30 seconds
+cron = "*/30 * * * * *"
+
+# ─────────────────────────────────────────────────────────────────────
+# ANALYTICS CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+[analytics]
+# Enable Logflare service (local development)
+enabled = false
+# Port for Logflare
+port = 54327
+# Vector ingest port
+vector_port = 54328
+# Backend (postgres or bigquery)
+backend = "postgres"
+
+# ─────────────────────────────────────────────────────────────────────
+# EMAIL TESTING (Local Development)
+# ─────────────────────────────────────────────────────────────────────
+
+[inbucket]
+# Enable InBucket email testing
+enabled = true
+# Web interface port
+port = 54324
+# SMTP port
+smtp_port = 54325
+# POP3 port
+pop3_port = 54326
+# Admin email
+admin_email = "admin@email.com"
+# Sender name
+sender_name = "Admin"
+
+# ─────────────────────────────────────────────────────────────────────
+# EXPERIMENTAL FEATURES
+# ─────────────────────────────────────────────────────────────────────
+
+[experimental]
+# Webhooks (experimental)
+webhooks_enabled = false
+# OrioleDB storage (experimental)
+orioledb_version = ""
+
+# ─────────────────────────────────────────────────────────────────────
+# BRANCHING / REMOTE CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+# Configure remote branches for preview deployments
+# [remotes.staging]
+# project_id = "your-staging-project-id"
