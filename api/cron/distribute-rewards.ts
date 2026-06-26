@@ -4,12 +4,14 @@ import axios from 'axios';
 
 export const config = { runtime: 'edge' };
 
+// ─── SUPABASE CLIENT ──────────────────────────────────────────────
+
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-//─── CIRCLE API ─────────────────────────────────────────────────
+// ─── CIRCLE API ──────────────────────────────────────────────────
 
 const CIRCLE_API_KEY = process.env.CIRCLE_API_KEY!;
 const CIRCLE_API_URL = process.env.CIRCLE_API_URL || 'https://api-sandbox.circle.com/v1/w3s';
@@ -30,7 +32,8 @@ async function circleTransfer(toAddress: string, amount: number, matchId: string
       headers: {
         Authorization: `Bearer ${CIRCLE_API_KEY}`,
         'Content-Type': 'application/json',
-      }
+      },
+      timeout: 30000, // 30 second timeout
     }
   );
   return response.data;
@@ -40,6 +43,7 @@ async function circleTransfer(toAddress: string, amount: number, matchId: string
 
 export default async function handler(request: Request): Promise<Response> {
   try {
+    // ─── AUTHENTICATION ──────────────────────────────────────────
     const cronSecret = request.headers.get('x-cron-secret') || request.headers.get('authorization');
 
     if (cronSecret && cronSecret !== process.env.CRON_SECRET) {
@@ -80,20 +84,23 @@ export default async function handler(request: Request): Promise<Response> {
 
         // ─── SEND REWARD VIA CIRCLE API ──────────────────────────
         const winnerTx = await circleTransfer(
-          reward.winner_address, 
-          reward.winner_reward_usdc, 
-          reward.match_id, 
+          reward.winner_address,
+          reward.winner_reward_usdc,
+          reward.match_id,
           'winner'
         );
 
-        let runnerTx = null;
+        const winnerTxId = winnerTx?.data?.id || winnerTx?.id;
+
+        let runnerTxId = null;
         if (reward.runner_up_address && reward.runner_up_reward_usdc > 0) {
-          runnerTx = await circleTransfer(
-            reward.runner_up_address, 
-            reward.runner_up_reward_usdc, 
-            reward.match_id, 
+          const runnerTx = await circleTransfer(
+            reward.runner_up_address,
+            reward.runner_up_reward_usdc,
+            reward.match_id,
             'runner'
           );
+          runnerTxId = runnerTx?.data?.id || runnerTx?.id;
         }
 
         // ─── UPDATE ESCROW_REWARDS ──────────────────────────────
@@ -101,8 +108,8 @@ export default async function handler(request: Request): Promise<Response> {
           .from('escrow_rewards')
           .update({
             escrow_status: 'released',
-            tx_hash_winner: winnerTx?.data?.id || winnerTx?.id,
-            tx_hash_runner_up: runnerTx?.data?.id || runnerTx?.id,
+            tx_hash_winner: winnerTxId,
+            tx_hash_runner_up: runnerTxId,
             release_time: new Date().toISOString(),
           })
           .eq('match_id', reward.match_id);
@@ -112,17 +119,17 @@ export default async function handler(request: Request): Promise<Response> {
           .from('matches')
           .update({
             reward_released: true,
-            reward_tx_hash: winnerTx?.data?.id || winnerTx?.id,
+            reward_tx_hash: winnerTxId,
             reward_released_at: new Date().toISOString(),
           })
           .eq('match_id', reward.match_id);
 
         success++;
-        console.log(`✅ USDC sent for match: ${reward.match_id} (TX: ${winnerTx?.data?.id || winnerTx?.id})`);
+        console.log(`✅ USDC sent for match: ${reward.match_id} (TX: ${winnerTxId})`);
 
       } catch (err: any) {
         console.error(`❌ Failed to send USDC for ${reward.match_id}:`, err.message);
-        
+
         await supabase
           .from('escrow_rewards')
           .update({
@@ -148,7 +155,7 @@ export default async function handler(request: Request): Promise<Response> {
 
   } catch (err: any) {
     console.error("[Distributor Critical Error]", err);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: err.message,
       timestamp: new Date().toISOString()
     }), { status: 500 });
