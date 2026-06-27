@@ -1,4 +1,3 @@
-// contracts/FillGameTournament.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
@@ -20,7 +19,6 @@ interface IEscrow {
 }
 
 contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
-
     using SafeERC20 for IERC20;
 
     // ──────────────────────────────────────────────
@@ -46,7 +44,6 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
         bool    isCasual;
     }
 
-    // Bundles createMatch params into one struct to fix "Stack too deep"
     struct CreateMatchParams {
         uint256 matchId;
         address player1;
@@ -59,25 +56,24 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     // ──────────────────────────────────────────────
     // State Variables
     // ──────────────────────────────────────────────
+
     uint256 public entryFee = 0.1 ether;
     uint256 public protocolFeeBps = 1000; // 10%
     uint256 public matchTimeout = 7 days;
 
     address public nftContract;
-    address public paymentToken;      // address(0) = native token (ETH/AVAX)
+    address public paymentToken;
     address public treasury;
-    address public escrowContract;    // ─── NEW: Escrow contract for USDC
+    address public escrowContract;
 
     uint256 public protocolFeeBalance;
 
-    // FIX: private instead of public — the auto-generated public getter
-    // tries to put all 16 struct fields onto the EVM stack at once,
-    // which exceeds the 16-slot limit. Use getMatch() below instead.
     mapping(uint256 => Match) private _matches;
 
     // ──────────────────────────────────────────────
     // Events
     // ──────────────────────────────────────────────
+
     event MatchCreated(uint256 indexed matchId, address creator, bool isCasual);
     event PlayerJoined(uint256 indexed matchId, address player, uint256 amount);
     event MatchCancelled(uint256 indexed matchId, address cancelledBy);
@@ -86,14 +82,11 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     event PrizeDistributed(uint256 indexed matchId, address indexed winner, uint256 amount);
     event ProtocolFeeCollected(uint256 indexed matchId, uint256 amount);
     event VictoryNFTMinted(uint256 indexed matchId, address indexed winner, uint256 tokenId);
-
-    // ─── NEW EVENTS ──────────────────────────────────────────────
     event EscrowContractUpdated(address indexed oldContract, address indexed newContract);
     event EscrowReleaseFailed(uint256 indexed matchId, address indexed winner);
     event EscrowRefundFailed(uint256 indexed matchId);
     event EscrowInitialized(uint256 indexed matchId, uint256 amount);
 
-    // Configuration events
     event EntryFeeUpdated(uint256 oldFee, uint256 newFee);
     event ProtocolFeeBpsUpdated(uint256 oldBps, uint256 newBps);
     event MatchTimeoutUpdated(uint256 oldTimeout, uint256 newTimeout);
@@ -104,6 +97,7 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     // ──────────────────────────────────────────────
     // Errors
     // ──────────────────────────────────────────────
+
     error InvalidEntryFee();
     error MatchAlreadyExists();
     error InvalidMatchId();
@@ -123,11 +117,11 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     error InvalidTreasury();
     error EscrowNotSet();
     error EscrowInitializationFailed();
-    error EscrowReleaseFailedError();
 
     // ──────────────────────────────────────────────
     // Constructor
     // ──────────────────────────────────────────────
+
     constructor(address _initialTreasury) Ownable(msg.sender) {
         require(_initialTreasury != address(0), InvalidTreasury());
         treasury = _initialTreasury;
@@ -136,6 +130,7 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     // ──────────────────────────────────────────────
     // Configuration
     // ──────────────────────────────────────────────
+
     function setEntryFee(uint256 _fee) external onlyOwner {
         if (_fee == 0) revert InvalidEntryFee();
         emit EntryFeeUpdated(entryFee, _fee);
@@ -171,7 +166,6 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
         treasury = _treasury;
     }
 
-    // ─── NEW: Set Escrow Contract ──────────────────────────────
     function setEscrowContract(address _escrow) external onlyOwner {
         require(_escrow != address(0), "Invalid escrow address");
         emit EscrowContractUpdated(escrowContract, _escrow);
@@ -182,15 +176,13 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     function unpause() external onlyOwner { _unpause(); }
 
     // ──────────────────────────────────────────────
-    // View — replaces the removed public mapping getter
+    // View Functions
     // ──────────────────────────────────────────────
 
-    // Returns the full Match struct in memory (no stack pressure)
     function getMatch(uint256 matchId) external view returns (Match memory) {
         return _matches[matchId];
     }
 
-    // ─── NEW: Get escrow funding status ──────────────────────────
     function getMatchEscrowFunding(uint256 matchId) external view returns (bool player1Paid, bool player2Paid, uint256 totalAmount) {
         if (escrowContract == address(0)) return (false, false, 0);
         return IEscrow(escrowContract).getMatchFunding(matchId);
@@ -204,12 +196,9 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     // ──────────────────────────────────────────────
     // Internal Helpers
     // ──────────────────────────────────────────────
+
     function _isNative(Match storage m) internal view returns (bool) {
         return m.lockedPaymentToken == address(0);
-    }
-
-    function _isUSDC(Match storage m) internal view returns (bool) {
-        return m.lockedPaymentToken != address(0);
     }
 
     function _sendPayment(address to, uint256 amount, address token) internal {
@@ -228,9 +217,7 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
         return m;
     }
 
-    // ─── NEW: Helper to get USDC entry fee (6 decimals) ──────────
     function _getUSDCAmount(uint256 ethAmount) internal pure returns (uint256) {
-        // Convert from 18 decimals (ether) to 6 decimals (USDC)
         return ethAmount / 1e12;
     }
 
@@ -259,9 +246,8 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
         m.lockedEntryFee     = entryFee;
         m.lockedPaymentToken = paymentToken;
 
-        // ─── Initialize escrow for official USDC matches ──────────
+        // Initialize escrow for official USDC matches
         if (!p.isCasual && escrowContract != address(0) && paymentToken != address(0)) {
-            // Entry fee in USDC (6 decimals) - convert from ether (18 decimals)
             uint256 usdcEntryFee = _getUSDCAmount(entryFee);
             if (usdcEntryFee > 0) {
                 (bool success, ) = escrowContract.call(
@@ -314,7 +300,7 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
         _collectProtocolFee(m, protocolFee);
         _mintVictoryNFT(m, winnerAddr);
 
-        // ─── Release USDC from escrow if applicable ──────────────
+        // Release USDC from escrow if applicable
         if (!m.isCasual && escrowContract != address(0) && m.lockedPaymentToken != address(0)) {
             (bool success, ) = escrowContract.call(
                 abi.encodeWithSignature(
@@ -323,7 +309,6 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
                     winnerAddr
                 )
             );
-            // Don't revert if escrow fails - just log (prize already distributed via native/ERC20)
             if (!success) {
                 emit EscrowReleaseFailed(matchId, winnerAddr);
             }
@@ -342,7 +327,7 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
 
         m.isCancelled = true;
 
-        // ─── Refund escrow if applicable ──────────────────────────
+        // Refund escrow if applicable
         if (!m.isCasual && escrowContract != address(0) && m.lockedPaymentToken != address(0)) {
             (bool success, ) = escrowContract.call(
                 abi.encodeWithSignature(
@@ -377,8 +362,6 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
         protocolFeeBalance = 0;
         _sendPayment(treasury, bal, paymentToken);
     }
-
-    receive() external payable {}
 
     // ──────────────────────────────────────────────
     // Internal Logic
@@ -462,4 +445,14 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
         _sendPayment(player, amount, m.lockedPaymentToken);
         m.prizePool -= amount;
     }
+
+    // ──────────────────────────────────────────────
+    // Override
+    // ──────────────────────────────────────────────
+
+    function renounceOwnership() public view override onlyOwner {
+        revert("Cannot renounce ownership");
+    }
+
+    receive() external payable {}
 }
