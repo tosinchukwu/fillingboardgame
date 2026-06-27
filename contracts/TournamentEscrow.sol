@@ -409,4 +409,11 @@ contract Escrow is Ownable, ReentrancyGuard, Pausable {
 
     function pause() external onlyOwner { _pause(); }
     function unpause() external onlyOwner { _unpause(); }
+
+    /**
+     * @notice Prevent renouncing ownership
+     */
+    function renounceOwnership() public override onlyOwner {
+        revert("Cannot renounce ownership");
+    }
 }
