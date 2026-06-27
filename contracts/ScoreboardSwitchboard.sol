@@ -220,5 +220,14 @@ contract FillingGameScoreboard is Ownable, ReentrancyGuard {
         maxUpdateAge = newMax;
     }
 
+    // ─────────────────────────── Overrides ─────────────────────────── //
+
+    /**
+     * @notice Prevent renouncing ownership
+     */
+    function renounceOwnership() public override onlyOwner {
+        revert("Cannot renounce ownership");
+    }
+
     receive() external payable {}
 }
