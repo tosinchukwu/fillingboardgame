@@ -1,3 +1,16 @@
+// Add at the top with other contract addresses
+export const ESCROW_CONTRACT_ADDRESSES = {
+ 
+  avalancheFuji: '0x',
+  baseSepolia: '0x...',
+  arbitrumSepolia: '0x...',   // ← You'll fill this after deployment
+  optimismSepolia: '0x',
+  bscTestnet: '0x',
+  polygonAmoy: '0x',
+  arcTestnet: '0x'
+  // add other chains as needed
+};
+
 import {
   avalancheFuji,
   avalanche,
@@ -14,18 +27,6 @@ import {
 } from 'viem/chains';
 import { defineChain } from 'viem';
 
-// Add at the top with other contract addresses
-export const ESCROW_CONTRACT_ADDRESSES = {
- 
-  avalancheFuji: '0x',
-  baseSepolia: '0x...',
-  arbitrumSepolia: '0x...',   // ← You'll fill this after deployment
-  optimismSepolia: '0x',
-  bscTestnet: '0x',
-  polygonAmoy: '0x',
-  arcTestnet: '0x'
-  // add other chains as needed
-};
 
 // Also add a helper
 export const isEscrowConfigured = (chainId: number) => {
