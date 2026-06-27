@@ -51,86 +51,62 @@ const RPC_URLS: Record<number, string> = {
   // ─── TESTNETS ──────────────────────────────────────────────────
   43113: 'https://api.avax-test.network/ext/bc/C/rpc',          // Avalanche Fuji
   84532: 'https://sepolia.base.org',                            // Base Sepolia
+  421614: 'https://sepolia-rollup.arbitrum.io/rpc',             // Arbitrum Sepolia
+  11155420: 'https://sepolia.optimism.io',                      // Optimism Sepolia
+  97: 'https://data-seed-prebsc-1-s1.binance.org:8545',         // BSC Testnet
+  80002: 'https://rpc-amoy.polygon.technology',                 // Polygon Amoy
   7200: 'https://testnet.arc.network',                          // Arc Testnet
 
   // ─── MAINNETS ──────────────────────────────────────────────────
   43114: 'https://api.avax.network/ext/bc/C/rpc',               // Avalanche Mainnet
   8453: 'https://mainnet.base.org',                             // Base Mainnet
+  42161: 'https://arb1.arbitrum.io/rpc',                        // Arbitrum
+  10: 'https://mainnet.optimism.io',                            // Optimism
+  56: 'https://bsc-dataseed.binance.org/',                      // BSC
+  137: 'https://polygon-rpc.com/',                              // Polygon
   7201: 'https://mainnet.arc.network',                          // Arc Mainnet
-
-  // ─── ADD MORE MAINNETS HERE (fill in when ready) ──────────────
-  // 1: 'https://mainnet.infura.io/v3/YOUR_INFURA_KEY',         // Ethereum
-  // 10: 'https://mainnet.optimism.io',                         // Optimism
-  // 56: 'https://bsc-dataseed.binance.org/',                   // BSC
-  // 100: 'https://rpc.gnosischain.com',                        // Gnosis
-  // 137: 'https://polygon-rpc.com/',                           // Polygon
-  // 250: 'https://rpc.ftm.tools/',                             // Fantom
-  // 324: 'https://mainnet.zksync.io',                          // zkSync Era
-  // 1101: 'https://zkevm-rpc.com',                             // Polygon zkEVM
-  // 42161: 'https://arb1.arbitrum.io/rpc',                     // Arbitrum
-  // 42220: 'https://forno.celo.org',                           // Celo
-  // 43114: 'https://api.avax.network/ext/bc/C/rpc',            // Avalanche (already above)
-  // 59144: 'https://linea.drpc.org',                           // Linea
-  // 81457: 'https://blast.drpc.org',                           // Blast
-  // 8453: 'https://mainnet.base.org',                          // Base (already above)
-  // 534352: 'https://rpc.scroll.io',                           // Scroll
-  // 7201: 'https://mainnet.arc.network',                       // Arc (already above)
 };
 
-// ─── CONTRACT ADDRESSES PER CHAIN ──────────────────────────────
+// ─── CONTRACT ADDRESSES PER CHAIN (FROM YOUR CONSTANTS.TS) ────
 
 const CONTRACT_ADDRESS_MAP: Record<number, string> = {
   // ─── TESTNETS ──────────────────────────────────────────────────
-  43113: '0x3C9b881dF5d7A5219B887F2bf0e3ba2a96EE72D4',     // Avalanche Fuji Tournament
-  84532: '0x7056a1628f8afD8D9413b3Ffc701F6B357ED5ED8',    // Base Sepolia Tournament
-  7200: '0x3B8abC0a3B8dA8cbc384D76bDac33E5eF4b13d7D',     // Arc Testnet Tournament
+  43113: '0xB546e013bEF78beF80c2B0DC0edAe72B0be5F008',      // Avalanche Fuji Tournament
+  84532: '0x809E719EbB89e415c5d3A249D4a40172C28E4c99',      // Base Sepolia Tournament
+  421614: '0xD0597E10A5E99a0aD9318d31265ef1d99B6DBeF8',     // Arbitrum Sepolia Tournament
+  11155420: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',   // Optimism Sepolia Tournament
+  97: '0x4A0FFd38EBcD6352C8801cB2a5ccc60Dd2C3463C',          // BSC Testnet Tournament
+  80002: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',       // Polygon Amoy Tournament
+  7200: '0xD56bDb436a26421F76B8a975402784Fbc5536910',        // Arc Testnet Tournament
 
   // ─── MAINNETS ──────────────────────────────────────────────────
-  43114: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',    // Avalanche Mainnet Tournament
-  8453: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',     // Base Mainnet Tournament
-  7201: '0x0000000000000000000000000000000000000000',     // ← ARC MAINNET TOURNAMENT (UPDATE AFTER DEPLOYMENT)
-
-  // ─── ADD MORE MAINNETS HERE (fill in when ready) ──────────────
-  // 1: '0x0000000000000000000000000000000000000000',     // Ethereum
-  // 10: '0x0000000000000000000000000000000000000000',    // Optimism
-  // 56: '0x0000000000000000000000000000000000000000',    // BSC
-  // 100: '0x0000000000000000000000000000000000000000',   // Gnosis
-  // 137: '0x0000000000000000000000000000000000000000',   // Polygon
-  // 250: '0x0000000000000000000000000000000000000000',   // Fantom
-  // 324: '0x0000000000000000000000000000000000000000',   // zkSync Era
-  // 1101: '0x0000000000000000000000000000000000000000',  // Polygon zkEVM
-  // 42161: '0x0000000000000000000000000000000000000000', // Arbitrum
-  // 42220: '0x0000000000000000000000000000000000000000', // Celo
-  // 59144: '0x0000000000000000000000000000000000000000', // Linea
-  // 81457: '0x0000000000000000000000000000000000000000', // Blast
-  // 534352: '0x0000000000000000000000000000000000000000',// Scroll
+  43114: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',       // Avalanche Mainnet
+  8453: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',        // Base Mainnet
+  42161: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',       // Arbitrum
+  10: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',          // Optimism
+  56: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',          // BSC
+  137: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',         // Polygon
+  7201: '0x306beA249FF7ee1057a5A0a5a17f108F5a1C7DF8',        // Arc Mainnet
 };
 
 const ESCROW_ADDRESS_MAP: Record<number, string> = {
   // ─── TESTNETS ──────────────────────────────────────────────────
-  43113: '0x0000000000000000000000000000000000000000',     // ← UPDATE AFTER DEPLOYMENT
-  84532: '0x0000000000000000000000000000000000000000',     // ← UPDATE AFTER DEPLOYMENT
-  7200: '0x0000000000000000000000000000000000000000',      // ← UPDATE AFTER DEPLOYMENT
+  43113: '0x0E1c198Cd586A2fE9d090A274310a351578f6C28',      // Avalanche Fuji Escrow
+  84532: '0x3182945d96Cd66568910805C324EEC0B26cFa897',      // Base Sepolia Escrow
+  421614: '0xDFaDa953298F04C322480D73e53436FBA4204349',     // Arbitrum Sepolia Escrow
+  11155420: '0x145f9c9088C7c09dfD9c00e889B044A63a85564F',   // Optimism Sepolia Escrow
+  97: '0x5D96085343D83C2100dbB82B22bE5E7f70377b53',          // BSC Testnet Escrow
+  80002: '0x0000000000000000000000000000000000000000',       // Polygon Amoy Escrow (TODO)
+  7200: '0x9E70F5ca6120670C479f42A8f40fdFFf97bD0FDb',        // Arc Testnet Escrow
 
   // ─── MAINNETS ──────────────────────────────────────────────────
-  43114: '0x0000000000000000000000000000000000000000',     // ← UPDATE AFTER DEPLOYMENT
-  8453: '0x0000000000000000000000000000000000000000',      // ← UPDATE AFTER DEPLOYMENT
-  7201: '0x0000000000000000000000000000000000000000',      // ← UPDATE AFTER DEPLOYMENT
-
-  // ─── ADD MORE MAINNETS HERE (fill in when ready) ──────────────
-  // 1: '0x0000000000000000000000000000000000000000',
-  // 10: '0x0000000000000000000000000000000000000000',
-  // 56: '0x0000000000000000000000000000000000000000',
-  // 100: '0x0000000000000000000000000000000000000000',
-  // 137: '0x0000000000000000000000000000000000000000',
-  // 250: '0x0000000000000000000000000000000000000000',
-  // 324: '0x0000000000000000000000000000000000000000',
-  // 1101: '0x0000000000000000000000000000000000000000',
-  // 42161: '0x0000000000000000000000000000000000000000',
-  // 42220: '0x0000000000000000000000000000000000000000',
-  // 59144: '0x0000000000000000000000000000000000000000',
-  // 81457: '0x0000000000000000000000000000000000000000',
-  // 534352: '0x0000000000000000000000000000000000000000',
+  43114: '0x0000000000000000000000000000000000000000',       // Avalanche Mainnet (TODO)
+  8453: '0x0000000000000000000000000000000000000000',        // Base Mainnet (TODO)
+  42161: '0x0000000000000000000000000000000000000000',       // Arbitrum (TODO)
+  10: '0x0000000000000000000000000000000000000000',          // Optimism (TODO)
+  56: '0x0000000000000000000000000000000000000000',          // BSC (TODO)
+  137: '0x0000000000000000000000000000000000000000',         // Polygon (TODO)
+  7201: '0x0000000000000000000000000000000000000000',        // Arc Mainnet (TODO)
 };
 
 // ─── ABIs ────────────────────────────────────────────────────────
@@ -191,7 +167,7 @@ function getChainConfig(chainId: number) {
 }
 
 function getRpcUrl(chainId: number): string {
-  return RPC_URLS[chainId] || RPC_URLS[43113]; // Fallback to Fuji
+  return RPC_URLS[chainId] || RPC_URLS[43113];
 }
 
 function getContractAddress(chainId: number): string {
@@ -217,7 +193,6 @@ async function getMatchFromChain(matchId: string, chainId: number) {
     const tournamentAddress = getContractAddress(chainId) as `0x${string}`;
     const escrowAddress = getEscrowAddress(chainId) as `0x${string}`;
 
-    // Get match data from tournament contract
     const match = await client.readContract({
       address: tournamentAddress,
       abi: TOURNAMENT_ABI,
@@ -225,7 +200,6 @@ async function getMatchFromChain(matchId: string, chainId: number) {
       args: [BigInt(matchId)],
     }) as any;
 
-    // Get funding status from escrow contract
     let escrowFunding = null;
     if (escrowAddress !== '0x0000000000000000000000000000000000000000') {
       try {
@@ -317,7 +291,6 @@ Deno.serve(async (req: Request) => {
 
         console.log(`Verifying match: ${matchId} on chain ${chainId}`);
 
-        // ─── VERIFY ON-CHAIN ──────────────────────────────────
         const onChainData = await getMatchFromChain(matchId, chainId);
 
         if (!onChainData) {
