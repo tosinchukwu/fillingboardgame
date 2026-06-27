@@ -102,23 +102,6 @@ enabled = true
 policy = "oneshot"
 inspector_port = 8083
 
-# ─────────────────────────────────────────────────────────────────────
-# EDGE FUNCTIONS (Custom Configuration)
-# ─────────────────────────────────────────────────────────────────────
-
-# ── verify-game-result ─────────────────────────────────────────────
-[functions.verify-game-result]
-verify_jwt = false
-
-# ── verify-results ──────────────────────────────────────────────────
-[functions.verify-results]
-verify_jwt = false
-cron = "*/30 * * * * *"
-
-# ── distribute-rewards ──────────────────────────────────────────────
-[functions.distribute-rewards]
-verify_jwt = false
-cron = "*/30 * * * * *"
 
 # ─────────────────────────────────────────────────────────────────────
 # ANALYTICS CONFIGURATION
