@@ -123,7 +123,7 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     // ──────────────────────────────────────────────
 
     constructor(address _initialTreasury) Ownable(msg.sender) {
-        require(_initialTreasury != address(0), InvalidTreasury());
+        require(_initialTreasury != address(0), "Invalid treasury address");
         treasury = _initialTreasury;
     }
 
@@ -161,7 +161,7 @@ contract FillGameTournament is Ownable, ReentrancyGuard, Pausable {
     }
 
     function setTreasury(address _treasury) external onlyOwner {
-        require(_treasury != address(0), InvalidTreasury());
+        require(_treasury != address(0), "Invalid treasury address");
         emit TreasuryUpdated(treasury, _treasury);
         treasury = _treasury;
     }
