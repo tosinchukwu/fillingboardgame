@@ -113,10 +113,12 @@ verify_jwt = false
 # ── verify-results ──────────────────────────────────────────────────
 [functions.verify-results]
 verify_jwt = false
+cron = "*/30 * * * * *"
 
 # ── distribute-rewards ──────────────────────────────────────────────
 [functions.distribute-rewards]
 verify_jwt = false
+cron = "*/30 * * * * *"
 
 # ─────────────────────────────────────────────────────────────────────
 # ANALYTICS CONFIGURATION
