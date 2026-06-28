@@ -1,3 +1,4 @@
+// src/providers/Web3Provider.tsx (or similar)
 import { createWeb3Modal } from '@web3modal/wagmi/react'
 import { defaultWagmiConfig } from '@web3modal/wagmi/react/config'
 import { WagmiProvider } from 'wagmi'
@@ -5,6 +6,27 @@ import { WALLET_CONNECT_PROJECT_ID, SUPPORTED_CHAINS } from '../lib/constants'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactNode, Component, ErrorInfo } from 'react'
 
+// ─── FIX: Handle multiple wallet extensions ──────────────────────────
+if (typeof window !== 'undefined') {
+  // Only run if we're in the browser
+  const ethereum = (window as any).ethereum;
+  
+  // If there are multiple providers, use the first one
+  if (ethereum && ethereum.providers) {
+    try {
+      // Use the first provider (usually MetaMask)
+      const provider = ethereum.providers[0];
+      // Replace window.ethereum with the first provider
+      Object.defineProperty(window, 'ethereum', {
+        value: provider,
+        writable: false,
+        configurable: false,
+      });
+    } catch (e) {
+      console.warn('Could not set ethereum provider:', e);
+    }
+  }
+}
 
 console.log("Project ID value:", WALLET_CONNECT_PROJECT_ID);
 console.log("Project ID type:", typeof WALLET_CONNECT_PROJECT_ID);
