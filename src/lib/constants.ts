@@ -15,30 +15,30 @@ import {
 } from 'viem/chains';
 import { defineChain } from 'viem';
 
-// ─── CONTRACT ADDRESSES ───────────────────────────────────────────
+// ─── CUSTOM CHAINS (must be defined BEFORE maps that use them) ──
+export const arcTestnet = defineChain({
+  id: 5042002,
+  name: 'Arc Testnet',
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.testnet.arc.network'] },
+  },
+  blockExplorers: {
+    default: { name: 'ArcScan', url: 'https://testnet.arcscan.app' },
+  },
+});
 
-// ─── ESCROW CONTRACT ADDRESSES ────────────────────────────────────
-export const ESCROW_CONTRACT_ADDRESSES = {
-  avalancheFuji: '0x0E1c198Cd586A2fE9d090A274310a351578f6C28',
-  baseSepolia: '0x3182945d96Cd66568910805C324EEC0B26cFa897',
-  arbitrumSepolia: '0xDFaDa953298F04C322480D73e53436FBA4204349',
-  optimismSepolia: '0x145f9c9088C7c09dfD9c00e889B044A63a85564F',
-  bscTestnet: '0x5D96085343D83C2100dbB82B22bE5E7f70377b53',
-  polygonAmoy: '0x0000000000000000000000000000000000000000',
-  arcTestnet: '0x9E70F5ca6120670C479f42A8f40fdFFf97bD0FDb',
-  // Mainnets
-  avalanche: '0x0000000000000000000000000000000000000000',
-  base: '0x0000000000000000000000000000000000000000',
-  arbitrum: '0x0000000000000000000000000000000000000000',
-  optimism: '0x0000000000000000000000000000000000000000',
-  bsc: '0x0000000000000000000000000000000000000000',
-  polygon: '0x0000000000000000000000000000000000000000',
-  arcMainnet: '0x0000000000000000000000000000000000000000',
-};
-
-export const isEscrowConfigured = (chainId: number) => {
-  return !!ESCROW_CONTRACT_ADDRESSES[chainId as keyof typeof ESCROW_CONTRACT_ADDRESSES];
-};
+export const arcMainnet = defineChain({
+  id: 5042001,
+  name: 'Arc Mainnet',
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.arc.network'] },
+  },
+  blockExplorers: {
+    default: { name: 'ArcScan', url: 'https://arcscan.app' },
+  },
+});
 
 // ─── USDC ADDRESSES ────────────────────────────────────────────────
 export const USDC_ADDRESS_MAP: Record<number, `0x${string}`> = {
@@ -58,6 +58,33 @@ export const USDC_ADDRESS_MAP: Record<number, `0x${string}`> = {
   [bsc.id]: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
   [polygon.id]: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
   [arcMainnet.id]: '0x0000000000000000000000000000000000000000',
+};
+
+// ─── CONTRACT ADDRESSES ───────────────────────────────────────────
+
+// ─── ESCROW CONTRACT ADDRESSES (now using numeric chain IDs) ────
+export const ESCROW_CONTRACT_ADDRESSES: Record<number, `0x${string}`> = {
+  // Testnets
+  [avalancheFuji.id]: '0x0E1c198Cd586A2fE9d090A274310a351578f6C28',
+  [baseSepolia.id]: '0x3182945d96Cd66568910805C324EEC0B26cFa897',
+  [arbitrumSepolia.id]: '0xDFaDa953298F04C322480D73e53436FBA4204349',
+  [optimismSepolia.id]: '0x145f9c9088C7c09dfD9c00e889B044A63a85564F',
+  [bscTestnet.id]: '0x5D96085343D83C2100dbB82B22bE5E7f70377b53',
+  [polygonAmoy.id]: '0x0000000000000000000000000000000000000000',
+  [arcTestnet.id]: '0x9E70F5ca6120670C479f42A8f40fdFFf97bD0FDb',
+  // Mainnets
+  [avalanche.id]: '0x0000000000000000000000000000000000000000',
+  [base.id]: '0x0000000000000000000000000000000000000000',
+  [arbitrum.id]: '0x0000000000000000000000000000000000000000',
+  [optimism.id]: '0x0000000000000000000000000000000000000000',
+  [bsc.id]: '0x0000000000000000000000000000000000000000',
+  [polygon.id]: '0x0000000000000000000000000000000000000000',
+  [arcMainnet.id]: '0x0000000000000000000000000000000000000000',
+};
+
+// Fixed: no cast needed now
+export const isEscrowConfigured = (chainId: number) => {
+  return !!ESCROW_CONTRACT_ADDRESSES[chainId];
 };
 
 // ─── TOURNAMENT CONTRACT ADDRESSES ────────────────────────────────
@@ -123,32 +150,6 @@ export const VERIFIER_ADDRESS_MAP: Record<number, `0x${string}`> = {
 
 // ─── CHAIN CONFIG ──────────────────────────────────────────────────
 
-// Define custom Arc Testnet
-export const arcTestnet = defineChain({
-  id: 5042002,
-  name: 'Arc Testnet',
-  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['https://rpc.testnet.arc.network'] },
-  },
-  blockExplorers: {
-    default: { name: 'ArcScan', url: 'https://testnet.arcscan.app' },
-  },
-});
-
-// Define custom Arc Mainnet (placeholder)
-export const arcMainnet = defineChain({
-  id: 5042001,
-  name: 'Arc Mainnet',
-  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['https://rpc.arc.network'] },
-  },
-  blockExplorers: {
-    default: { name: 'ArcScan', url: 'https://arcscan.app' },
-  },
-});
-
 // Toggle this to switch between testnets and mainnets easily
 export const IS_MAINNET = false;
 
@@ -176,13 +177,12 @@ export function getUSDCAddress(chainId: number): `0x${string}` {
   return USDC_ADDRESS_MAP[chainId] ?? ZERO_ADDRESS;
 }
 
+// Fixed: no cast needed now
 export function getEscrowAddress(chainId: number): `0x${string}` {
-  const address = ESCROW_CONTRACT_ADDRESSES[chainId as keyof typeof ESCROW_CONTRACT_ADDRESSES];
-  return (address as `0x${string}`) ?? ZERO_ADDRESS;
+  return ESCROW_CONTRACT_ADDRESSES[chainId] ?? ZERO_ADDRESS;
 }
 
 export const WALLETCONNECT_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
-
 // ─── ABIs ─────────────────────────────────────────────────────────
 
 // ── FillGameTournament ────────────────────────────────────────────────────────
