@@ -181,7 +181,7 @@ export function getEscrowAddress(chainId: number): `0x${string}` {
   return (address as `0x${string}`) ?? ZERO_ADDRESS;
 }
 
-export const WALLET_CONNECT_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+export const WALLETCONNECT_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 
 // ─── ABIs ─────────────────────────────────────────────────────────
 
