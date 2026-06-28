@@ -1,4 +1,4 @@
-// src/providers/Web3Provider.tsx (or wherever your Web3 provider is)
+// src/providers/Web3Provider.tsx
 import { createWeb3Modal } from '@web3modal/wagmi/react'
 import { defaultWagmiConfig } from '@web3modal/wagmi/react/config'
 import { WagmiProvider } from 'wagmi'
@@ -9,10 +9,6 @@ import { ReactNode, Component, ErrorInfo, useEffect, useState } from 'react'
 console.log("Project ID value:", WALLETCONNECT_PROJECT_ID);
 console.log("Project ID type:", typeof WALLETCONNECT_PROJECT_ID);
 
-// ─── FIX: Delay Web3Modal initialization ──────────────────────────
-let config: ReturnType<typeof defaultWagmiConfig> | null = null;
-let initError: string | null = null;
-
 // 1. Get projectId from https://cloud.walletconnect.com
 const projectId = WALLETCONNECT_PROJECT_ID;
 
@@ -22,6 +18,9 @@ if (!projectId || projectId === 'undefined' || projectId === 'null') {
 }
 
 // 2. Create wagmiConfig (wrapped in try-catch)
+let config: ReturnType<typeof defaultWagmiConfig> | null = null;
+let initError: string | null = null;
+
 try {
   const metadata = {
     name: 'Filling Game',
@@ -30,14 +29,15 @@ try {
     icons: ['https://avatars.githubusercontent.com/u/37784886']
   }
 
+  // Use only the first few chains to avoid conflicts
+  const chains = SUPPORTED_CHAINS.slice(0, 6);
+
   config = defaultWagmiConfig({
-    chains: SUPPORTED_CHAINS,
+    chains: chains,
     projectId,
     metadata,
   })
 
-  // 3. Create modal (but delay it)
-  // We'll create it in the component after mount
 } catch (e) {
   console.error("Web3 initialization failed:", e);
   initError = e instanceof Error ? e.message : String(e);
@@ -45,7 +45,7 @@ try {
 
 const queryClient = new QueryClient()
 
-// Error boundary
+// Error boundary to catch runtime crashes in child components
 class Web3ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
   constructor(props: { children: ReactNode }) {
     super(props);
@@ -84,15 +84,17 @@ class Web3ErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 
 export function Web3Provider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
-  // ─── Initialize Web3Modal after mount ────────────────────────────
+  // ─── CRITICAL: Initialize Web3Modal AFTER mount ──────────────
   useEffect(() => {
-    if (!isReady && config && !initError) {
-      try {
-        // Delay initialization to avoid TDZ issues
-        const timer = setTimeout(() => {
-          // Create modal only after mount
-          const { createWeb3Modal } = require('@web3modal/wagmi/react');
+    // Only run once
+    if (isReady || modalError) return;
+
+    try {
+      // Small delay to ensure DOM is fully ready
+      const timer = setTimeout(() => {
+        try {
           createWeb3Modal({
             wagmiConfig: config!,
             projectId,
@@ -100,14 +102,38 @@ export function Web3Provider({ children }: { children: ReactNode }) {
             enableOnramp: true,
           });
           setIsReady(true);
-        }, 100);
-        return () => clearTimeout(timer);
-      } catch (e) {
-        console.error("Web3Modal creation failed:", e);
-        initError = e instanceof Error ? e.message : String(e);
-      }
+          console.log('✅ Web3Modal initialized successfully');
+        } catch (err) {
+          console.error("Web3Modal creation failed:", err);
+          setModalError(err instanceof Error ? err.message : String(err));
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    } catch (err) {
+      console.error("Web3Modal setup error:", err);
+      setModalError(err instanceof Error ? err.message : String(err));
     }
-  }, [isReady]);
+  }, [isReady, modalError]);
+
+  // ─── Show error if Web3Modal fails ────────────────────────────
+  if (modalError) {
+    return (
+      <div style={{ padding: '2rem', color: '#ff6b6b', background: '#1a1a2e', minHeight: '100vh', fontFamily: 'monospace' }}>
+        <h2>⚠️ Wallet Connection Error</h2>
+        <p>Failed to initialize wallet connection. The game may still work in solo mode.</p>
+        <pre style={{ background: '#0d0d1a', padding: '1rem', borderRadius: '8px', overflow: 'auto' }}>
+          {modalError}
+        </pre>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ marginTop: '1rem', padding: '0.5rem 1rem', background: '#4ecdc4', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#1a1a2e', fontWeight: 'bold' }}
+        >
+          Reload Page
+        </button>
+      </div>
+    );
+  }
 
   if (initError || !config) {
     return (
