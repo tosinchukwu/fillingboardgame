@@ -2,19 +2,19 @@
 import { createWeb3Modal } from '@web3modal/wagmi/react'
 import { defaultWagmiConfig } from '@web3modal/wagmi/react/config'
 import { WagmiProvider } from 'wagmi'
-import { WALLET_CONNECT_PROJECT_ID, SUPPORTED_CHAINS } from '../lib/constants'
+import { WALLETCONNECT_PROJECT_ID, SUPPORTED_CHAINS } from '../lib/constants'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactNode, Component, ErrorInfo, useEffect, useState } from 'react'
 
-console.log("Project ID value:", WALLET_CONNECT_PROJECT_ID);
-console.log("Project ID type:", typeof WALLET_CONNECT_PROJECT_ID);
+console.log("Project ID value:", WALLETCONNECT_PROJECT_ID);
+console.log("Project ID type:", typeof WALLETCONNECT_PROJECT_ID);
 
 // ─── FIX: Delay Web3Modal initialization ──────────────────────────
 let config: ReturnType<typeof defaultWagmiConfig> | null = null;
 let initError: string | null = null;
 
 // 1. Get projectId from https://cloud.walletconnect.com
-const projectId = WALLET_CONNECT_PROJECT_ID;
+const projectId = WALLETCONNECT_PROJECT_ID;
 
 // ─── Check if projectId is valid ──────────────────────────────────
 if (!projectId || projectId === 'undefined' || projectId === 'null') {
