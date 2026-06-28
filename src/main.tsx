@@ -3,41 +3,32 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// ─── FIX: Handle wallet extension conflicts ──────────────────────────
+// ─── FIX: Handle wallet extension conflicts BEFORE app loads ──────────
 if (typeof window !== 'undefined') {
-  // Store the original ethereum provider
-  const originalEthereum = (window as any).ethereum;
-  
-  // If there are multiple providers, use MetaMask
-  if (originalEthereum && originalEthereum.providers) {
-    const providers = originalEthereum.providers;
-    // Find MetaMask provider
-    const metamaskProvider = providers.find(
-      (p: any) => p.isMetaMask === true
-    );
-    // Use MetaMask if found, otherwise use first provider
-    if (metamaskProvider) {
-      // Create a new proxy to handle provider access
-      const handler = {
-        get: function(target: any, prop: string) {
-          if (prop === 'providers') {
-            return providers;
-          }
-          // Delegate to MetaMask provider
-          return metamaskProvider[prop];
-        },
-        set: function(target: any, prop: string, value: any) {
-          return Reflect.set(metamaskProvider, prop, value);
-        }
-      };
+  try {
+    // Check if there are multiple providers
+    const ethereum = (window as any).ethereum;
+    
+    if (ethereum && ethereum.providers && ethereum.providers.length > 1) {
+      console.log('Multiple wallet providers detected. Using MetaMask.');
       
-      // Replace ethereum with a proxy that uses MetaMask
+      // Find and use MetaMask provider
+      const metamask = ethereum.providers.find((p: any) => p.isMetaMask === true);
+      const coinbase = ethereum.providers.find((p: any) => p.isCoinbaseWallet === true);
+      
+      // Prefer MetaMask over others
+      const provider = metamask || coinbase || ethereum.providers[0];
+      
+      // Replace window.ethereum with the chosen provider
       Object.defineProperty(window, 'ethereum', {
-        value: new Proxy(metamaskProvider, handler),
+        value: provider,
         writable: false,
         configurable: false,
+        enumerable: true,
       });
     }
+  } catch (e) {
+    console.warn('Could not resolve ethereum provider:', e);
   }
 }
 
