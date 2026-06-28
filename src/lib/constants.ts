@@ -101,6 +101,7 @@ export const NFT_ADDRESS_MAP: Record<number, `0x${string}`> = {
 };
 
 // ─── SCOREBOARD (VERIFIER) ADDRESSES ─────────────────────────────
+// NOTE: This is now only used as a reference. We're using Supabase for scoreboard storage.
 export const VERIFIER_ADDRESS_MAP: Record<number, `0x${string}`> = {
   // Testnets
   [avalancheFuji.id]: '0xE43d015Eb9b36048b4b78862BF80623c7cACCa80',
@@ -154,63 +155,6 @@ export const IS_MAINNET = false;
 export const SUPPORTED_CHAINS = IS_MAINNET
   ? [avalanche, base, arbitrum, optimism, bsc, polygon, arcMainnet] as const
   : [avalanche, avalancheFuji, baseSepolia, arbitrumSepolia, optimismSepolia, bscTestnet, polygonAmoy, arcTestnet] as const;
-
-// ─── SWITCHBOARD CONFIG ──────────────────────────────────────────
-
-export const SWITCHBOARD_CROSSBAR_URL =
-  import.meta.env.VITE_SWITCHBOARD_CROSSBAR_URL || 'https://crossbar.switchboard.xyz';
-
-export const SWITCHBOARD_ROUTER_MAP: Record<number, `0x${string}`> = {
-  // Testnets
-  [avalancheFuji.id]: '0x0000000000000000000000000000000000000000',
-  [baseSepolia.id]: '0x0000000000000000000000000000000000000000',
-  [arbitrumSepolia.id]: '0x0d251E9F64Fb3a146af61bB99d80471893b20cCF',
-  [optimismSepolia.id]: '0x0000000000000000000000000000000000000000',
-  [bscTestnet.id]: '0x0000000000000000000000000000000000000000',
-  [polygonAmoy.id]: '0x0000000000000000000000000000000000000000',
-  [arcTestnet.id]: '0x0000000000000000000000000000000000000000',
-  // Mainnets
-  [avalanche.id]: '0x0000000000000000000000000000000000000000',
-  [base.id]: '0x0000000000000000000000000000000000000000',
-  [arbitrum.id]: '0xad9b8604b6b97187cde9e826cdeb7033c8c37198',
-  [optimism.id]: '0x0000000000000000000000000000000000000000',
-  [bsc.id]: '0x0000000000000000000000000000000000000000',
-  [polygon.id]: '0x0000000000000000000000000000000000000000',
-  [arcMainnet.id]: '0x0000000000000000000000000000000000000000',
-};
-
-export const SWITCHBOARD_FEED_ID_MAP: Record<number, `0x${string}`> = {
-  // Testnets
-  [avalancheFuji.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [baseSepolia.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [arbitrumSepolia.id]: '0x07546a4cbebf9b22dc3d4fba088ef4bdcaa892ae2028fc589d502e311e52e7e0',
-  [optimismSepolia.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [bscTestnet.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [polygonAmoy.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [arcTestnet.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  // Mainnets
-  [avalanche.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [base.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [arbitrum.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [optimism.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [bsc.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [polygon.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-  [arcMainnet.id]: '0x0000000000000000000000000000000000000000000000000000000000000000',
-};
-
-export const SWITCHBOARD_MAX_FEE_WEI = BigInt(
-  import.meta.env.VITE_SWITCHBOARD_MAX_FEE_WEI || '500000000000000'
-);
-
-export function isSwitchboardConfigured(chainId: number): boolean {
-  const router = SWITCHBOARD_ROUTER_MAP[chainId];
-  const feed = SWITCHBOARD_FEED_ID_MAP[chainId];
-  const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
-  return (
-    !!router && router !== '0x0000000000000000000000000000000000000000' &&
-    !!feed && feed !== ZERO_BYTES32
-  );
-}
 
 // ─── HELPERS ──────────────────────────────────────────────────────
 
@@ -665,6 +609,7 @@ export const TOURNAMENT_ABI = [
 ] as const;
 
 // ── FillingGameScoreboard ─────────────────────────────────────────────────────
+// NOTE: This ABI is kept for reference but we're using Supabase for scoreboard storage.
 export const SCOREBOARD_ABI = [
   {
     inputs: [{ internalType: 'address', name: 'router', type: 'address' }],
