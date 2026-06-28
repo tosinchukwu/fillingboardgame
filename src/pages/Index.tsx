@@ -22,8 +22,7 @@ import BackgroundLayer, { BackgroundMode } from '../components/BackgroundLayer';
 import { useAccount, useDisconnect, useWriteContract, useWaitForTransactionReceipt, useReadContract, useSwitchChain } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { encodeFunctionData, parseEther } from 'viem';
-import { CONTRACT_ABI, VERIFIER_CONTRACT_ABI, SUPPORTED_CHAINS, CONTRACT_ADDRESS_MAP, VERIFIER_ADDRESS_MAP, IS_MAINNET, isSwitchboardConfigured } from '../lib/constants';
-import { fetchVerifiedUpdate } from '../lib/switchboard';
+import { CONTRACT_ABI, SUPPORTED_CHAINS, CONTRACT_ADDRESS_MAP, VERIFIER_ADDRESS_MAP, IS_MAINNET } from '../lib/constants';
 import { supabase } from '../lib/supabase';
 import { getMatchType, formatMatchId, parseMatchId, isValidMatchId } from '../lib/matchIdUtils';
 import { saveMatchMetadata, getMatchType as fetchMatchType } from '../lib/matchIdMapping';
@@ -351,7 +350,6 @@ const Index = () => {
   const activeChainId = chain?.id || SUPPORTED_CHAINS[0].id;
   const activeContractAddress = CONTRACT_ADDRESS_MAP[activeChainId] || CONTRACT_ADDRESS_MAP[SUPPORTED_CHAINS[0].id];
   const activeVerifierAddress = VERIFIER_ADDRESS_MAP[activeChainId] || VERIFIER_ADDRESS_MAP[SUPPORTED_CHAINS[0].id];
-  const switchboardReady = isSwitchboardConfigured(activeChainId);
 
   const parsedMatchId = (() => {
     try {
@@ -377,15 +375,6 @@ const Index = () => {
     query: {
       enabled: !!parsedMatchId && setupMode === 'multi' && isLobbyJoined,
       refetchInterval: 3000,
-    }
-  });
-
-  const { data: verificationGameCount, refetch: refetchGameCount } = useReadContract({
-    address: activeVerifierAddress as `0x${string}`,
-    abi: VERIFIER_CONTRACT_ABI,
-    functionName: 'getGameCount',
-    query: {
-      enabled: false,
     }
   });
 
@@ -486,12 +475,11 @@ const Index = () => {
   }, [setupMode, activeSyncId, isVsCPU, theme]);
 
   // ============================================================
-  // ✅ FIXED - handleHitNumber with NO CPU toast warnings
+  // handleHitNumber
   // ============================================================
   const handleHitNumber = useCallback((num: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
 
-    // ✅ NO toast warnings - just basic validation
     if (gameState.dartsRemaining <= 0) {
       toast.warning("No darts remaining this turn!", {
         duration: 1500,
@@ -516,12 +504,11 @@ const Index = () => {
   }, [gameState, broadcastGameState, theme, address]);
 
   // ============================================================
-  // ✅ FIXED - handleHitRing with NO CPU toast warnings
+  // handleHitRing
   // ============================================================
   const handleHitRing = useCallback((ringIdx: number, dartPos?: { x: number; y: number; angle: number; tilt: number }) => {
     if (!gameState || gameState.gameOver) return;
 
-    // ✅ NO toast warnings - just basic validation
     if (gameState.dartsRemaining <= 0) {
       toast.warning("No darts remaining this turn!", {
         duration: 1500,
@@ -770,10 +757,6 @@ const Index = () => {
                   const numMatch = latestMsg.match(/#?(\d+)/);
                   const targetNum = numMatch ? parseInt(numMatch[1]) : 14;
                   playSFX('hit');
-                  // ✅ REMOVED: CPU auto-play toast warning
-                  // window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', {
-                  //   detail: { target: targetNum }
-                  // }));
                 }
               }
               return newState;
@@ -889,7 +872,7 @@ const Index = () => {
   }, [playSFX]);
 
   // ============================================================
-  // ✅ FIXED: CPU plays its turn automatically (WITHOUT toast warnings)
+  // CPU Turn Logic
   // ============================================================
   useEffect(() => {
     if (
@@ -902,20 +885,16 @@ const Index = () => {
       !showBatchOverlay &&
       !isDartFlying
     ) {
-      // CPU throws after a short delay (looks natural)
       const delay = gameState.dartsRemaining === 3 ? 6000 : 2000;
       
       cpuTurnTimeoutRef.current = setTimeout(() => {
-        // Calculate the best move for CPU
         const move = computeCPUMove(gameState);
         const visualTarget = move.type === 'number' ? move.index : (RING_NUMBERS[move.index]?.[0] ?? 1);
         
-        // Animate the CPU dart throw
         window.dispatchEvent(new CustomEvent('REMOTE_HIT_ANIMATION', {
           detail: { target: visualTarget, playerIdx: 1 }
         }));
         
-        // Apply the CPU's hit after animation
         cpuAnimationTimeoutRef.current = setTimeout(() => {
           setGameState(prevState => {
             if (!prevState || prevState.currentPlayer !== 1 || prevState.gameOver) return prevState;
@@ -989,26 +968,6 @@ const Index = () => {
       });
     }
   }, [isTxSuccess, hash]);
-
-  // Verification poll
-  useEffect(() => {
-    if (hash && verificationRequestId === '') {
-      setVerificationRequestId(hash);
-      const pollInterval = setInterval(async () => {
-        try {
-          const result = await refetchGameCount();
-          if (result.data && Number(result.data) > 0) {
-            setVerificationComplete(true);
-            clearInterval(pollInterval);
-            toast.success('🎉 Score successfully recorded on-chain!');
-          }
-        } catch (error) {
-          console.error("Polling error:", error);
-        }
-      }, 5000);
-      return () => clearInterval(pollInterval);
-    }
-  }, [hash, verificationRequestId, refetchGameCount]);
 
   // Invite lobby guest detection
   useEffect(() => {
@@ -1169,18 +1128,16 @@ const Index = () => {
   };
 
   // ============================================================
-  // ✅ FIXED - canIThrow with proper turn validation (NO CPU warnings)
+  // canIThrow
   // ============================================================
   const canIThrow = (() => {
     if (!gameState || gameState.gameOver || gameState.dartsRemaining <= 0 || showBatchOverlay) return false;
     if (isDartFlying) return false;
 
-    // ✅ In CPU mode, only player 0 (human) can throw
     if (gameState.isVsCPU) {
       return gameState.currentPlayer === 0;
     }
 
-    // Multiplayer mode - check if it's this player's turn
     const myAddr = address?.toLowerCase();
     const activePlayerAddr = gameState.players[gameState.currentPlayer].address?.toLowerCase();
     if (!myAddr || !activePlayerAddr) return false;
@@ -1287,7 +1244,7 @@ const Index = () => {
   };
 
   // ============================================================
-  // ✅ FIXED - getLauncherText with NO CPU warnings
+  // getLauncherText
   // ============================================================
   const getLauncherText = () => {
     if (!gameState) return '';
@@ -1296,12 +1253,10 @@ const Index = () => {
     if (gameState.dartsRemaining <= 0) return 'Turn Ending...';
     if (isPaused) return '⏸️ Game Paused';
     
-    // ✅ CPU mode: show "Your Turn" or "Waiting" without toast
     if (gameState.isVsCPU) {
       return gameState.currentPlayer === 0 ? '🎯 Your Turn' : '⏳ Waiting...';
     }
     
-    // Multiplayer mode
     if (canIThrow) return '🎯 Your Turn';
     return '⏳ Waiting for Turn';
   };
@@ -1868,55 +1823,6 @@ const Index = () => {
                 >
                   🎮 Play Again
                 </Button>
-
-                <Button
-                  onClick={async () => {
-                    if (!address) {
-                      toast.error("Please connect your wallet first!");
-                      return;
-                    }
-                    if (!switchboardReady) {
-                      toast.error("Switchboard verifier not configured for this network yet.");
-                      return;
-                    }
-                    setIsVerifying(true);
-                    try {
-                      const winnerName = gameState?.players[gameState.winner!]?.name || "Anonymous";
-                      const bundle = await fetchVerifiedUpdate(activeChainId, {
-                        hitHistory,
-                        winnerName,
-                        winnerAddress: address,
-                        matchId: activeSyncId ?? '',
-                      });
-                      writeContract({
-                        address: activeVerifierAddress as `0x${string}`,
-                        abi: VERIFIER_CONTRACT_ABI,
-                        functionName: 'submitVerifiedResult',
-                        args: [bundle.encodedUpdates, winnerName],
-                        account: address as `0x${string}`,
-                        chain: chain,
-                        value: parseEther('0.0005'),
-                      });
-                      toast.success("Verification submitted via Switchboard!");
-                    } catch (error) {
-                      console.error("Verification failed:", error);
-                      toast.error(
-                        error instanceof Error ? error.message : "Failed to initiate verification.",
-                      );
-                    } finally {
-                      setIsVerifying(false);
-                    }
-                  }}
-                  disabled={isVerifying || !hitHistory.length}
-                  variant="outline"
-                  className="w-full h-12 border-primary/30 text-primary font-black uppercase tracking-widest text-xs rounded-xl hover:bg-primary/5 transition-all"
-                >
-                  {isVerifying ? (
-                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Verifying via Switchboard...</>
-                  ) : (
-                    '🛡️ Verify Score on Chain (Switchboard)'
-                  )}
-                </Button>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-8">
@@ -1988,7 +1894,7 @@ const Index = () => {
                 {verificationComplete ? (
                   '✅ Verification Complete - Check Verified History Tab'
                 ) : (
-                  '⏳ Switchboard quorum signing your score...'
+                  '⏳ Score will be verified automatically by the bot'
                 )}
               </div>
 
@@ -2032,7 +1938,6 @@ const Index = () => {
             <span className="font-mono-game text-[11px] tracking-[0.2em] text-primary font-bold uppercase">
               {gameState.players[gameState.currentPlayer].name}'S TURN
             </span>
-            {/* ✅ Turn indicator for multiplayer */}
             {!gameState.isVsCPU && address && (
               <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
                 address.toLowerCase() === gameState.players[gameState.currentPlayer].address?.toLowerCase()
@@ -2044,7 +1949,6 @@ const Index = () => {
                   : '⏳ WAITING'}
               </span>
             )}
-            {/* CPU mode indicator - FIXED: No more toast warnings */}
             {gameState.isVsCPU && (
               <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
                 gameState.currentPlayer === 0
