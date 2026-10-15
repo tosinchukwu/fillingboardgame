@@ -1,3 +1,4 @@
+// src/components/BridgeDialog.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
@@ -16,114 +17,159 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAccount, useReadContract } from 'wagmi';
-import { ArrowRight, Coins, Loader2, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import {
+  ArrowRight,
+  Coins,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { formatUnits, parseUnits } from 'viem';
+import {
+  SUPPORTED_CHAINS,
+  IS_MAINNET,
+  getUSDCAddress,
+} from '../lib/constants';
 
-// USDC Token Addresses on Sepolia testnets
-const USDC_ADDRESSES = {
-  84532: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Base Sepolia USDC
-  421614: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // Arbitrum Sepolia USDC
-  11155420: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // Optimism Sepolia USDC
-};
-
-// USDC ABI (minimal for balance and approval)
+// ─── USDC ABI (viem-compatible) ───────────────────────────────────
 const USDC_ABI = [
   {
-    constant: true,
     inputs: [{ name: '_owner', type: 'address' }],
     name: 'balanceOf',
     outputs: [{ name: 'balance', type: 'uint256' }],
+    stateMutability: 'view',
     type: 'function',
   },
   {
-    constant: false,
     inputs: [
       { name: '_spender', type: 'address' },
       { name: '_value', type: 'uint256' },
     ],
     name: 'approve',
     outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
-    constant: true,
     inputs: [
       { name: '_owner', type: 'address' },
       { name: '_spender', type: 'address' },
     ],
     name: 'allowance',
     outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
     type: 'function',
   },
-];
+] as const;
+
+// ─── ARC DESTINATION (derived from IS_MAINNET) ────────────────────
+const ARC_CHAIN_ID = IS_MAINNET ? 5042 : 5042002;
+const arcChain = SUPPORTED_CHAINS.find((c) => c.id === ARC_CHAIN_ID);
+
+if (!arcChain) {
+  console.error(
+    '[BridgeDialog] Arc chain not found in SUPPORTED_CHAINS. Check constants.ts (IS_MAINNET=' +
+      IS_MAINNET +
+      ', expected chainId=' +
+      ARC_CHAIN_ID +
+      ')'
+  );
+}
+
+const ARC_DESTINATION = {
+  chainId: arcChain?.id ?? ARC_CHAIN_ID,
+  name: arcChain?.name ?? (IS_MAINNET ? 'Arc Mainnet' : 'Arc Testnet'),
+  rpcUrl:
+    arcChain?.rpcUrls.default.http[0] ??
+    (IS_MAINNET
+      ? 'https://rpc.mainnet.arc.io'
+      : 'https://rpc.testnet.arc.network'),
+  blockExplorer:
+    arcChain?.blockExplorers?.default.url ??
+    (IS_MAINNET ? 'https://explorer.arc.io' : 'https://testnet.arcscan.app'),
+  // ⚠️ Native gas token on Arc uses 18 decimals (EVM standard).
+  // The ERC-20 USDC interface uses 6 decimals.
+  nativeCurrency: arcChain?.nativeCurrency ?? {
+    name: 'USDC',
+    symbol: 'USDC',
+    decimals: 18,
+  },
+} as const;
 
 interface BridgeDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// Chain configurations
-const SOURCE_CHAINS = {
-  'Base Sepolia': {
-    chainId: 84532,
-    name: 'Base Sepolia',
-    rpcUrl: 'https://sepolia.base.org',
-    blockExplorer: 'https://sepolia.basescan.org',
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    tokenSymbol: 'USDC',
-    tokenName: 'USD Coin',
-    tokenDecimals: 6,
-    usdcAddress: USDC_ADDRESSES[84532],
-  },
-  'Arbitrum Sepolia': {
-    chainId: 421614,
-    name: 'Arbitrum Sepolia',
-    rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
-    blockExplorer: 'https://sepolia.arbiscan.io',
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    tokenSymbol: 'USDC',
-    tokenName: 'USD Coin',
-    tokenDecimals: 6,
-    usdcAddress: USDC_ADDRESSES[421614],
-  },
-  'Optimism Sepolia': {
-    chainId: 11155420,
-    name: 'Optimism Sepolia',
-    rpcUrl: 'https://sepolia.optimism.io',
-    blockExplorer: 'https://sepolia-optimism.etherscan.io',
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    tokenSymbol: 'USDC',
-    tokenName: 'USD Coin',
-    tokenDecimals: 6,
-    usdcAddress: USDC_ADDRESSES[11155420],
-  },
+// ─── SOURCE CHAIN TYPES ───────────────────────────────────────────
+type SourceChainInfo = {
+  chainId: number;
+  name: string;
+  rpcUrl: string;
+  blockExplorer: string;
+  nativeCurrency: { name: string; symbol: string; decimals: number };
+  tokenSymbol: string;
+  tokenName: string;
+  tokenDecimals: number;
+  usdcAddress: `0x${string}`;
 };
 
-// Arc Testnet configuration (Chain ID: 5042002)
-const ARC_TESTNET = {
-  chainId: 5042002,
-  name: 'Arc Testnet',
-  rpcUrl: 'https://rpc.testnet.arc.network',
-  blockExplorer: 'https://testnet.arcscan.app',
-  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 }, // USDC is native gas token
-};
+// ─── SOURCE CHAINS (derived from SUPPORTED_CHAINS, Arc excluded) ──
+const SOURCE_CHAINS: Record<string, SourceChainInfo> = SUPPORTED_CHAINS
+  .filter((c) => c.id !== ARC_DESTINATION.chainId)
+  .reduce((acc, chain) => {
+    acc[chain.name] = {
+      chainId: chain.id,
+      name: chain.name,
+      rpcUrl: chain.rpcUrls.default.http[0],
+      blockExplorer: chain.blockExplorers?.default.url ?? '',
+      nativeCurrency: {
+        name: chain.nativeCurrency.name,
+        symbol: chain.nativeCurrency.symbol,
+        decimals: chain.nativeCurrency.decimals,
+      },
+      tokenSymbol: 'USDC',
+      tokenName: 'USD Coin',
+      tokenDecimals: 6, // ERC-20 interface for USDC = 6 decimals
+      usdcAddress: getUSDCAddress(chain.id),
+    };
+    return acc;
+  }, {} as Record<string, SourceChainInfo>);
+
+const SOURCE_CHAIN_NAMES = Object.keys(SOURCE_CHAINS);
 
 const MIN_BRIDGE_AMOUNT = 1; // 1 USDC minimum
 const MAX_BRIDGE_AMOUNT = 10000; // 10,000 USDC maximum
 
+// ─── CIRCLE APP KIT CHAIN NAME FORMATTER ──────────────────────────
+// Circle expects "Base_Sepolia", "Arbitrum_Sepolia", "Ethereum", etc.
+// Replace ALL whitespace, not just the first space.
+const formatChain = (chain: string) => chain.replace(/\s+/g, '_');
+
+// ─── COMPONENT ────────────────────────────────────────────────────
 export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) => {
   const { isConnected, address, chainId: walletChainId } = useAccount();
+
   const [amount, setAmount] = useState('1');
-  const [sourceChain, setSourceChain] = useState('Base Sepolia');
+  const [sourceChain, setSourceChain] = useState(
+    SOURCE_CHAIN_NAMES[0] ?? ''
+  );
   const [isBridging, setIsBridging] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [needsApproval, setNeedsApproval] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
   const isBridgingRef = useRef(false);
 
-  const currentSourceChain = SOURCE_CHAINS[sourceChain as keyof typeof SOURCE_CHAINS];
+  // Keep sourceChain valid if SUPPORTED_CHAINS changes (IS_MAINNET toggle)
+  useEffect(() => {
+    if (!SOURCE_CHAINS[sourceChain] && SOURCE_CHAIN_NAMES.length > 0) {
+      setSourceChain(SOURCE_CHAIN_NAMES[0]);
+    }
+  }, [sourceChain]);
+
+  const currentSourceChain = SOURCE_CHAINS[sourceChain];
   const isCorrectNetwork = walletChainId === currentSourceChain?.chainId;
 
   // Fetch USDC balance on source chain
@@ -134,43 +180,62 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
     args: [address as `0x${string}`],
     chainId: currentSourceChain?.chainId,
     query: {
-      enabled: !!address && !!currentSourceChain?.usdcAddress,
-    }
+      enabled:
+        !!address &&
+        !!currentSourceChain?.usdcAddress &&
+        currentSourceChain.usdcAddress !==
+          '0x0000000000000000000000000000000000000000',
+    },
   });
 
-  const balance = usdcBalanceData !== undefined ? formatUnits(usdcBalanceData as bigint, currentSourceChain.tokenDecimals) : null;
+  const balance =
+    usdcBalanceData !== undefined && currentSourceChain
+      ? formatUnits(
+          usdcBalanceData as bigint,
+          currentSourceChain.tokenDecimals
+        )
+      : null;
   const balanceNumber = balance ? parseFloat(balance) : 0;
 
+  // ─── Validation ────────────────────────────────────────────────
   const validateBridge = () => {
     if (!isConnected || !address) {
-      toast.error("Please connect your wallet first!");
+      toast.error('Please connect your wallet first!');
+      return false;
+    }
+    if (!currentSourceChain) {
+      toast.error('Please select a source chain.');
+      return false;
+    }
+    if (
+      currentSourceChain.usdcAddress ===
+      '0x0000000000000000000000000000000000000000'
+    ) {
+      toast.error(`USDC is not configured on ${currentSourceChain.name}.`);
       return false;
     }
 
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      toast.error("Please enter a valid amount to bridge.");
+      toast.error('Please enter a valid amount to bridge.');
       return false;
     }
-
     if (numericAmount < MIN_BRIDGE_AMOUNT) {
       toast.error(`Minimum bridge amount is ${MIN_BRIDGE_AMOUNT} USDC`);
       return false;
     }
-
     if (numericAmount > MAX_BRIDGE_AMOUNT) {
       toast.error(`Maximum bridge amount is ${MAX_BRIDGE_AMOUNT} USDC`);
       return false;
     }
-
     if (balance && numericAmount > balanceNumber) {
       toast.error(`Insufficient USDC balance. You have ${balance} USDC`);
       return false;
     }
-
     return true;
   };
 
+  // ─── Network switching ─────────────────────────────────────────
   const switchNetwork = async (chainId: number) => {
     try {
       await (window as any).ethereum.request({
@@ -184,13 +249,15 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
         try {
           await (window as any).ethereum.request({
             method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: `0x${chainId.toString(16)}`,
-              chainName: currentSourceChain?.name,
-              rpcUrls: [currentSourceChain?.rpcUrl],
-              blockExplorerUrls: [currentSourceChain?.blockExplorer],
-              nativeCurrency: currentSourceChain?.nativeCurrency
-            }]
+            params: [
+              {
+                chainId: `0x${chainId.toString(16)}`,
+                chainName: currentSourceChain?.name,
+                rpcUrls: [currentSourceChain?.rpcUrl],
+                blockExplorerUrls: [currentSourceChain?.blockExplorer],
+                nativeCurrency: currentSourceChain?.nativeCurrency,
+              },
+            ],
           });
           toast.success(`Added ${currentSourceChain?.name} to wallet`);
           return true;
@@ -204,15 +271,16 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
     }
   };
 
+  // ─── Bridge ────────────────────────────────────────────────────
   const handleBridge = async () => {
     if (!validateBridge()) return;
     if (isBridgingRef.current) return;
+    if (!currentSourceChain) return;
 
-    // Check network and switch if needed
     if (!isCorrectNetwork) {
       const switched = await switchNetwork(currentSourceChain.chainId);
       if (!switched) return;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     isBridgingRef.current = true;
@@ -220,32 +288,39 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
     setTxHash(null);
 
     const numericAmount = parseFloat(amount);
-    const amountInSmallestUnit = parseUnits(amount, currentSourceChain.tokenDecimals);
+    // NOTE: parseUnits for the ERC-20 interface uses 6 decimals for USDC.
+    // (We don't send this to Circle App Kit — the SDK parses from `amount` string —
+    //  but it's kept here if you later add a manual approve() call.)
+    const _amountInSmallestUnit = parseUnits(
+      amount,
+      currentSourceChain.tokenDecimals
+    );
+    void _amountInSmallestUnit;
 
-    toast.info(`Initiating bridge of ${numericAmount} USDC from ${sourceChain} to Arc Testnet...`);
+    toast.info(
+      `Initiating bridge of ${numericAmount} USDC from ${sourceChain} to ${ARC_DESTINATION.name}...`
+    );
 
     try {
-      // ✅ FIXED: Use VITE_CIRCLE_API_KEY (with VITE_ prefix for Vite)
       const apiKey = import.meta.env.VITE_CIRCLE_API_KEY;
 
-      // Debug log to see if it's loaded
-      console.log('🔑 Circle API Key loaded:', apiKey ? '✅ Yes (starts with ' + apiKey.substring(0, 8) + '...)' : '❌ Missing');
+      console.log(
+        '🔑 Circle API Key loaded:',
+        apiKey
+          ? `✅ Yes (starts with ${apiKey.substring(0, 8)}...)`
+          : '❌ Missing'
+      );
 
       if (!apiKey || apiKey === 'sandbox_key_placeholder' || apiKey === '') {
-        throw new Error("Valid Circle API key not configured. Please check your .env file.");
+        throw new Error(
+          'Valid Circle API key not configured. Please check your .env file.'
+        );
       }
 
       const { AppKit } = await import('@circle-fin/app-kit');
-      const { createViemAdapterFromProvider } = await import('@circle-fin/adapter-viem-v2');
-
-      // Register Arc Testnet as a custom chain with Circle App Kit
-      const arcChainConfig = {
-        chainId: ARC_TESTNET.chainId,
-        name: ARC_TESTNET.name,
-        rpcUrl: ARC_TESTNET.rpcUrl,
-        blockExplorerUrl: ARC_TESTNET.blockExplorer,
-        nativeCurrency: ARC_TESTNET.nativeCurrency,
-      };
+      const { createViemAdapterFromProvider } = await import(
+        '@circle-fin/adapter-viem-v2'
+      );
 
       const adapter = await createViemAdapterFromProvider({
         provider: (window as any).ethereum,
@@ -253,14 +328,16 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
 
       const kit = new AppKit();
 
-      // Bridge USDC from source chain to Arc Testnet
-      // Convert chain names to Circle's format (e.g. 'Base Sepolia' -> 'Base_Sepolia')
-      const formatChain = (chain: string) => chain.replace(' ', '_');
-
-      // Execute bridging flow via the App Kit SDK
+      // Bridge USDC from source chain to Arc (mainnet or testnet, per IS_MAINNET)
       const response = await kit.bridge({
-        from: { adapter: adapter, chain: formatChain(sourceChain) as any },
-        to: { adapter: adapter, chain: formatChain('Arc Testnet') as any },
+        from: {
+          adapter: adapter,
+          chain: formatChain(currentSourceChain.name) as any,
+        },
+        to: {
+          adapter: adapter,
+          chain: formatChain(ARC_DESTINATION.name) as any,
+        },
         token: 'USDC',
         amount: numericAmount.toString(),
       });
@@ -268,48 +345,53 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
       console.log('Circle App Kit bridge response:', response);
 
       toast.success(
-        `Successfully bridged ${numericAmount} USDC to Arc Testnet! Now you can use USDC as gas.`,
+        `Successfully bridged ${numericAmount} USDC to ${ARC_DESTINATION.name}! Now you can use USDC as gas.`,
         { duration: 8000 }
       );
 
-      // Refetch balance after successful bridge
       await refetchUsdcBalance();
 
       setTimeout(() => {
         onClose();
-        setAmount('10');
+        setAmount('1');
         setShowConfirm(false);
         setTxHash(null);
       }, 2000);
-
     } catch (err: any) {
       console.error('Bridge error:', err);
 
-      // Check if it's an approval error
-      if (err.message?.toLowerCase().includes('approve') || err.code === 'ACTION_REJECTED') {
+      if (
+        err.message?.toLowerCase().includes('approve') ||
+        err.code === 'ACTION_REJECTED'
+      ) {
         setNeedsApproval(true);
         toast.error('Please approve USDC spending first');
       } else if (import.meta.env.DEV) {
-        // Development fallback for testing
-        toast.info("Sandbox Mode: Simulating successful bridge operation...");
+        // Development fallback — simulate a successful bridge
+        toast.info('Sandbox Mode: Simulating successful bridge operation...');
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+        const mockTxHash = `0x${Array.from({ length: 64 }, () =>
+          Math.floor(Math.random() * 16).toString(16)
+        ).join('')}`;
         setTxHash(mockTxHash);
 
         toast.success(
-          `[SIMULATED] Bridged ${numericAmount} USDC from ${sourceChain} to Arc Testnet!`,
+          `[SIMULATED] Bridged ${numericAmount} USDC from ${sourceChain} to ${ARC_DESTINATION.name}!`,
           { duration: 8000 }
         );
 
         setTimeout(() => {
           onClose();
-          setAmount('10');
+          setAmount('1');
           setShowConfirm(false);
           setTxHash(null);
         }, 2000);
       } else {
-        toast.error(err.message || "Failed to execute bridge transfer. Please check console logs.");
+        toast.error(
+          err.message ||
+            'Failed to execute bridge transfer. Please check console logs.'
+        );
       }
     } finally {
       isBridgingRef.current = false;
@@ -317,17 +399,16 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
     }
   };
 
-  const handleConfirmBridge = () => {
-    setShowConfirm(true);
-  };
-
-  const cancelBridge = () => {
-    setShowConfirm(false);
-  };
+  const handleConfirmBridge = () => setShowConfirm(true);
+  const cancelBridge = () => setShowConfirm(false);
 
   const numericAmount = parseFloat(amount);
-  const isValidAmount = !isNaN(numericAmount) && numericAmount >= MIN_BRIDGE_AMOUNT && numericAmount <= MAX_BRIDGE_AMOUNT;
+  const isValidAmount =
+    !isNaN(numericAmount) &&
+    numericAmount >= MIN_BRIDGE_AMOUNT &&
+    numericAmount <= MAX_BRIDGE_AMOUNT;
 
+  // ─── Render ────────────────────────────────────────────────────
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -345,7 +426,7 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
             ARC CROSS-CHAIN BRIDGE
           </DialogTitle>
           <DialogDescription className="text-white/40 font-mono-game uppercase tracking-[0.2em] text-[9px] font-bold">
-            Bridge USDC → USDC for Arc gas fees
+            Bridge USDC → USDC for {ARC_DESTINATION.name} gas fees
           </DialogDescription>
         </DialogHeader>
 
@@ -353,7 +434,9 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
           <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-xs text-green-400 font-mono">Bridge Transaction Submitted</p>
+              <p className="text-xs text-green-400 font-mono">
+                Bridge Transaction Submitted
+              </p>
               <p className="text-[10px] text-green-400/70 font-mono break-all">
                 {txHash.slice(0, 10)}...{txHash.slice(-8)}
               </p>
@@ -365,19 +448,29 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
           {/* Transfer visualizer */}
           <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl border border-indigo-500/20">
             <div className="flex flex-col">
-              <span className="text-[9px] text-white/30 font-black uppercase tracking-widest">Source</span>
+              <span className="text-[9px] text-white/30 font-black uppercase tracking-widest">
+                Source
+              </span>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm font-bold text-white">{sourceChain}</span>
+                <span className="text-sm font-bold text-white">
+                  {sourceChain || '—'}
+                </span>
               </div>
               <span className="text-[10px] text-white/40 mt-1">Burning USDC</span>
             </div>
             <ArrowRight className="w-5 h-5 text-indigo-400 animate-pulse" />
             <div className="flex flex-col text-right">
-              <span className="text-[9px] text-white/30 font-black uppercase tracking-widest">Destination</span>
+              <span className="text-[9px] text-white/30 font-black uppercase tracking-widest">
+                Destination
+              </span>
               <div className="flex items-center gap-2 mt-1 justify-end">
-                <span className="text-sm font-bold text-primary">Arc Testnet</span>
+                <span className="text-sm font-bold text-primary">
+                  {ARC_DESTINATION.name}
+                </span>
               </div>
-              <span className="text-[10px] text-green-400 mt-1">Minting USDC (Gas)</span>
+              <span className="text-[10px] text-green-400 mt-1">
+                Minting USDC (Gas)
+              </span>
             </div>
           </div>
 
@@ -386,23 +479,26 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
             <label className="text-[10px] uppercase tracking-widest text-white/30 font-black ml-1">
               Select Source Network
             </label>
-            <Select value={sourceChain} onValueChange={(value) => {
-              setSourceChain(value);
-              setShowConfirm(false);
-            }}>
+            <Select
+              value={sourceChain}
+              onValueChange={(value) => {
+                setSourceChain(value);
+                setShowConfirm(false);
+              }}
+            >
               <SelectTrigger className="bg-white/5 border-white/10 text-white h-12 text-[11px] font-mono uppercase tracking-widest rounded-xl">
                 <SelectValue placeholder="Select Source Chain" />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-white/10 text-white">
-                <SelectItem value="Base Sepolia" className="text-[11px] font-mono uppercase tracking-widest">
-                  Base Sepolia (USDC)
-                </SelectItem>
-                <SelectItem value="Arbitrum Sepolia" className="text-[11px] font-mono uppercase tracking-widest">
-                  Arbitrum Sepolia (USDC)
-                </SelectItem>
-                <SelectItem value="Optimism Sepolia" className="text-[11px] font-mono uppercase tracking-widest">
-                  Optimism Sepolia (USDC)
-                </SelectItem>
+                {SOURCE_CHAIN_NAMES.map((name) => (
+                  <SelectItem
+                    key={name}
+                    value={name}
+                    className="text-[11px] font-mono uppercase tracking-widest"
+                  >
+                    {name} (USDC)
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -446,14 +542,17 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
           {/* Bridge mechanics info */}
           <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <p className="text-[10px] text-blue-400 font-mono text-center">
-              🔄 USDC burned on {sourceChain} → USDC minted on Arc Testnet for gas
+              🔄 USDC burned on {sourceChain} → USDC minted on{' '}
+              {ARC_DESTINATION.name} for gas
             </p>
           </div>
 
           {/* Confirmation Dialog */}
           {showConfirm && isValidAmount && (
             <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-3">
-              <p className="text-sm font-bold text-indigo-400">Confirm Bridge Details</p>
+              <p className="text-sm font-bold text-indigo-400">
+                Confirm Bridge Details
+              </p>
               <div className="space-y-1 text-xs">
                 <p className="flex justify-between">
                   <span className="text-white/60">From:</span>
@@ -461,15 +560,21 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
                 </p>
                 <p className="flex justify-between">
                   <span className="text-white/60">To:</span>
-                  <span className="text-white font-mono">Arc Testnet</span>
+                  <span className="text-white font-mono">
+                    {ARC_DESTINATION.name}
+                  </span>
                 </p>
                 <p className="flex justify-between">
                   <span className="text-white/60">Bridging:</span>
-                  <span className="text-white font-bold">{numericAmount} USDC</span>
+                  <span className="text-white font-bold">
+                    {numericAmount} USDC
+                  </span>
                 </p>
                 <p className="flex justify-between">
                   <span className="text-white/60">Receiving:</span>
-                  <span className="text-green-400 font-bold">{numericAmount} USDC (native gas)</span>
+                  <span className="text-green-400 font-bold">
+                    {numericAmount} USDC (native gas)
+                  </span>
                 </p>
                 <p className="flex justify-between">
                   <span className="text-white/60">Mechanism:</span>
@@ -508,7 +613,7 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4" />
-                  Bridge USDC to Arc
+                  Bridge USDC to {ARC_DESTINATION.name}
                 </>
               )}
             </Button>
@@ -524,8 +629,8 @@ export const BridgeDialog: React.FC<BridgeDialogProps> = ({ isOpen, onClose }) =
             </div>
           )}
 
-          {/* Warning for wrong network */}
-          {isConnected && !isCorrectNetwork && (
+          {/* Wrong-network warning */}
+          {isConnected && !isCorrectNetwork && currentSourceChain && (
             <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
               <AlertTriangle className="w-3 h-3 text-yellow-400 flex-shrink-0" />
               <p className="text-[9px] text-yellow-400 font-mono">
