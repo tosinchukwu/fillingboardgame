@@ -29,14 +29,14 @@ export const arcTestnet = defineChain({
 });
 
 export const arcMainnet = defineChain({
-  id: 5042001,
+  id: 5042,
   name: 'Arc Mainnet',
-  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+  nativeCurrency: { name: 'USDC', symbol: 'USDC',c decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://rpc.arc.network'] },
+    default: { http: ['https://rpc.mainnet.arc.io'] },
   },
   blockExplorers: {
-    default: { name: 'ArcScan', url: 'https://arcscan.app' },
+    default: { name: 'ArcScan', url: 'https://explorer.arc.io' },
   },
 });
 
@@ -57,7 +57,7 @@ export const USDC_ADDRESS_MAP: Record<number, `0x${string}`> = {
   [optimism.id]: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
   [bsc.id]: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
   [polygon.id]: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
-  [arcMainnet.id]: '0x0000000000000000000000000000000000000000',
+  [arcMainnet.id]: '0x3600000000000000000000000000000000000000',
 };
 
 // ─── CONTRACT ADDRESSES ───────────────────────────────────────────
