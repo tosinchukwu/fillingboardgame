@@ -151,7 +151,7 @@ export const VERIFIER_ADDRESS_MAP: Record<number, `0x${string}`> = {
 // ─── CHAIN CONFIG ──────────────────────────────────────────────────
 
 // Toggle this to switch between testnets and mainnets easily
-export const IS_MAINNET = false;
+export const IS_MAINNET = true;
 
 export const SUPPORTED_CHAINS = IS_MAINNET
   ? [avalanche, base, arbitrum, optimism, bsc, polygon, arcMainnet] as const
