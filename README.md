@@ -55,4 +55,6 @@ If a player hits a circular ring, they earn hits and filler points from **all nu
 
 ---
 
-Designed for competition. Master the rings, claim the bonuses, and set the Bar.
+Designed for competition. Master the rings, claim the bonuses, and set the Bar. 
+
+
